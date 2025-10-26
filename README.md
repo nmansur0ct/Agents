@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Technical Deep Dive: Agentic Implementation Details
 
 ## Enhanced Agentic Prompt Architecture
