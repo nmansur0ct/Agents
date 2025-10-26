@@ -44,6 +44,22 @@ The system works perfectly without LLM, but for enhanced analysis:
 
 ## Running the Application
 
+### 🔧 Save vs Console Output Behavior
+
+**By default**, the tool displays results in the console only. To save results to files:
+
+- **Recommended**: Use `--auto-save` to automatically save timestamped files to `results/`
+- **Custom**: Use `--output filename.json` or `--csv-output filename.csv` for specific names
+- **Console only**: Don't use any save flags to view results in terminal
+
+```bash
+# Saves to results/ folder with timestamp
+python run.py --file samples/features.json --auto-save
+
+# Displays in console only
+python run.py --file samples/features.json --verbose
+```
+
 ### Basic Usage (Without LLM)
 
 #### 1. Using JSON File Input
@@ -63,36 +79,51 @@ python run.py --json '[{"name": "Test Feature", "description": "A test feature f
 
 ### Enhanced Usage (With LLM)
 
-#### 1. Basic LLM Enhancement
+#### 1. Basic LLM Enhancement with Auto-Save
 ```bash
-python run.py --file samples/features.json --llm --verbose
+python run.py --file samples/features.json --llm --verbose --auto-save
 ```
 
-#### 2. LLM with Specific Model
+#### 2. LLM with Specific Model and Auto-Save
+```bash
+python run.py --file samples/features.json --llm --model gpt-4o-mini --verbose --auto-save
+```
+
+#### 3. LLM Output to Console Only (No Save)
 ```bash
 python run.py --file samples/features.json --llm --model gpt-4o-mini --verbose
 ```
 
-#### 3. LLM with Custom API Key Environment
+#### 4. LLM with Custom API Key Environment
 ```bash
-python run.py --file samples/features.json --llm --keyenv CUSTOM_OPENAI_KEY --verbose
+python run.py --file samples/features.json --llm --keyenv CUSTOM_OPENAI_KEY --verbose --auto-save
 ```
 
 ### Output Options
 
-#### 1. JSON Output File
+#### 1. Auto-Save with Timestamps (Recommended)
+```bash
+python run.py --file samples/features.json --auto-save
+python run.py --file samples/features.json --llm --auto-save
+```
+**Saves to**: `results/prioritization_rice_20241026_143055.json` and `.csv`
+
+#### 2. Custom Output Location (with Auto-Timestamp)
 ```bash
 python run.py --file samples/features.json --output results.json
-```
-
-#### 2. CSV Output File
-```bash
 python run.py --file samples/features.json --csv-output results.csv
 ```
+**Saves to**: `results/results_20241026_143055.json`
 
-#### 3. Detailed Results (All Processing Stages)
+#### 3. Console Output Only (No Save)
 ```bash
-python run.py --file samples/features.json --detailed --output detailed_results.json
+python run.py --file samples/features.json --verbose
+```
+**Output**: Results printed to terminal only
+
+#### 4. Detailed Results with Auto-Save
+```bash
+python run.py --file samples/features.json --detailed --auto-save
 ```
 
 ## Command Line Options Reference
@@ -107,8 +138,10 @@ python run.py --file samples/features.json --detailed --output detailed_results.
 | `--detailed` | `-d` | Include all processing stages | `--detailed` |
 | `--verbose` | `-v` | Show processing details | `--verbose` |
 | `--llm` | | Enable LLM enhancements | `--llm` |
-| `--model` | | OpenAI model to use | `--model gpt-3.5-turbo` |
+| `--model` | | OpenAI model to use | `--model gpt-4o-mini` |
 | `--keyenv` | | API key environment variable | `--keyenv OPENAI_API_KEY` |
+| `--auto-save` | | Auto-save with timestamps to results/ | `--auto-save` |
+| `--results-dir` | | Custom results directory | `--results-dir outputs` |
 
 ## Sample Data
 
@@ -131,30 +164,37 @@ head -10 samples/features.csv
 
 ## Example Workflows
 
-### 1. Quick Analysis (Keyword-based)
+### 1. Quick Analysis (Keyword-based) with Auto-Save
 ```bash
-# Fast analysis using keyword heuristics
-python run.py --file samples/features.json --metric RICE --verbose
+# Fast analysis using keyword heuristics, saves to results/
+python run.py --file samples/features.json --metric RICE --verbose --auto-save
 ```
-**Output**: Prioritized features with RICE scoring in ~1 second
+**Output**: Prioritized features with RICE scoring saved to `results/prioritization_rice_YYYYMMDD_HHMMSS.json` and `.csv`
 
-### 2. Enhanced Analysis (With LLM)
+### 2. Enhanced Analysis (With LLM) with Auto-Save
 ```bash
-# Intelligent analysis with LLM insights
-python run.py --file samples/features.json --llm --verbose
+# Intelligent analysis with LLM insights, saves to results/
+python run.py --file samples/features.json --llm --verbose --auto-save
 ```
-**Output**: Enhanced factor analysis and business rationales (requires API key)
+**Output**: Enhanced factor analysis and business rationales saved with timestamp
 
-### 3. Comprehensive Report
+### 3. Console Output Only (No Save)
 ```bash
-# Generate detailed report with all stages
-python run.py --file samples/features.json --detailed --output full_report.json --csv-output summary.csv
+# View results in terminal without saving
+python run.py --file samples/features.json --llm --model gpt-4o-mini --verbose
 ```
-**Output**: Complete analysis with JSON and CSV outputs
+**Output**: Results displayed in terminal only (useful for quick testing)
 
-### 4. Custom Feature Analysis
+### 4. Comprehensive Report with Auto-Save
 ```bash
-# Analyze your own features
+# Generate detailed report with all stages, auto-saved
+python run.py --file samples/features.json --detailed --auto-save
+```
+**Output**: Complete analysis with timestamped JSON and CSV in results/
+
+### 4. Custom Feature Analysis with Auto-Save
+```bash
+# Analyze your own features and save results
 python run.py --json '[
   {
     "name": "Mobile Payment Integration",
@@ -164,7 +204,29 @@ python run.py --json '[
     "name": "Advanced Search Filters", 
     "description": "Machine learning powered search with personalized filtering options"
   }
-]' --llm --metric ICE --verbose
+]' --llm --metric ICE --verbose --auto-save
+```
+
+## Output Behavior Guide
+
+**Important**: The tool saves results to files only when explicitly requested:
+
+### When Results are Saved to `results/` Folder:
+- ✅ Using `--auto-save`: `results/prioritization_rice_llm_20241026_143055.json` and `.csv`
+- ✅ Using `--output filename.json`: `results/filename_20241026_143055.json`
+- ✅ Using `--csv-output filename.csv`: `results/filename_20241026_143055.csv`
+
+### When Results are Only Displayed in Console:
+- ❌ No output flags: `python run.py --file samples/features.json --llm --verbose`
+- ❌ Only `--verbose` flag: Results print to terminal only
+
+### Recommended Usage:
+```bash
+# For saving results (recommended)
+python run.py --file samples/features.json --llm --model gpt-4o-mini --verbose --auto-save
+
+# For quick testing (console only)
+python run.py --file samples/features.json --llm --model gpt-4o-mini --verbose
 ```
 
 ## Understanding the Output
@@ -272,6 +334,19 @@ ls -la samples/features.json
 - The system gracefully falls back to keyword analysis
 - Check internet connection and API key validity
 - Verify API quota and billing status
+
+#### 5. Results Not Saved to Files
+```bash
+# Issue: Results only show in console
+# Cause: Missing save flags
+# Solution: Add --auto-save flag
+python run.py --file samples/features.json --llm --verbose --auto-save
+
+# Or use explicit output files
+python run.py --file samples/features.json --output my_results.json
+```
+
+**Note**: The tool only saves to files when you explicitly request it with save flags.
 
 ### Performance Notes
 

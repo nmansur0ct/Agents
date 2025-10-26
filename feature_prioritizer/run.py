@@ -195,7 +195,7 @@ def main(file, json_input, metric, output, detailed, csv_output, verbose, llm, m
         elif saved_files and verbose:
             click.echo(f"\nResults saved to:")
             for file_path in saved_files:
-                click.echo(f"  📄 {file_path}")
+                click.echo(f"   {file_path}")
         
         if verbose:
             if detailed and 'summary' in results:
