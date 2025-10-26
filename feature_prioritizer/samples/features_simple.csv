@@ -1,0 +1,6 @@
+name,description,reach_hint,revenue_hint,risk_reduction_hint,engineering_hint,dependency_hint,complexity_hint
+Quick Login,Simple login system with email and password,4,2,3,2,1,2
+Payment Gateway,Secure payment processing integration,3,5,4,3,3,3
+User Dashboard,Personal dashboard with account information,3,2,2,3,2,2
+Search Feature,Basic product search functionality,5,3,1,3,2,2
+Security Audit,Complete security review and fixes,1,1,5,4,2,3

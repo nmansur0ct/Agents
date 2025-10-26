@@ -1,0 +1,286 @@
+Feature Prioritization Assistant — Design & Low-Level Design (LLD)
+Generated: 2025-10-26T05:08:23
+
+============================================================
+1. PURPOSE & SCOPE
+============================================================
+This document describes the System Design and Low-Level Design (LLD) for the Feature Prioritization Assistant built using LangGraph + Pydantic. The assistant ingests a list of product features (with plain-text descriptions and optional numeric hints), extracts normalized impact/effort attributes, scores each feature via a configurable policy, and outputs an ordered priority list. The design emphasizes clear agent boundaries and deterministic orchestration suitable for beginners and TPM-led workshops.
+
+============================================================
+2. ARCHITECTURE OVERVIEW
+============================================================
+2.1 Agentic Pipeline
+  START → Feature Extractor → Impact–Effort Scorer → Prioritizer → END
+
+2.2 Roles
+  • Feature Extractor (Agent 1): Converts RawFeature → FeatureSpec with normalized attributes (0..1).
+  • Impact–Effort Scorer (Agent 2): Computes impact and effort using weighted sums; derives a composite score (RICE/ICE/ImpactMinusEffort).
+  • Prioritizer (Agent 3): Sorts features by score (descending) and emits rationale.
+
+2.3 Core Libraries
+  • LangGraph: Orchestrates nodes and edges.
+  • Pydantic: Enforces strict schemas for inputs/outputs.
+  • Python (stdlib): Deterministic keyword heuristics (no LLM dependency).
+
+2.4 Directory Structure
+  feature_prioritizer/
+    ├─ requirements.txt
+    ├─ run.py                 # entry-point CLI
+    ├─ graph.py               # LangGraph orchestration
+    ├─ nodes.py               # agent implementations
+    ├─ models.py              # Pydantic schemas & State
+    ├─ config.py              # scoring policy & weights
+    └─ samples/features.json  # demo data
+
+============================================================
+3. FUNCTIONAL REQUIREMENTS
+============================================================
+FR-1  Ingest a list of RawFeature items (JSON/CLI input).
+FR-2  Extract normalized attributes: reach, revenue, risk_reduction, engineering, dependency, complexity.
+FR-3  Score each feature using a configurable policy (RICE, ICE, ImpactMinusEffort).
+FR-4  Prioritize features by score, return rationale per item.
+FR-5  Produce a single JSON result suitable for dashboards or spreadsheets.
+
+============================================================
+4. NON-FUNCTIONAL REQUIREMENTS
+============================================================
+NFR-1  Deterministic behavior without external APIs (classroom-friendly).
+NFR-2  Simplicity & readability over micro-optimizations.
+NFR-3  Extensible: add agents, change scoring policy, adjust weights.
+NFR-4  Validated data contracts (schemas) to reduce runtime errors.
+NFR-5  CLI-based execution; minimal dependencies.
+
+============================================================
+5. DATA CONTRACTS (Pydantic Schemas)
+============================================================
+5.1 RawFeature
+  name: str
+  description: str
+  reach_hint?: int (1..5)
+  revenue_hint?: int (1..5)
+  risk_reduction_hint?: int (1..5)
+  engineering_hint?: int (1..5)
+  dependency_hint?: int (1..5)
+  complexity_hint?: int (1..5)
+
+5.2 FeatureSpec  (normalized factors 0..1)
+  name: str
+  reach: float
+  revenue: float
+  risk_reduction: float
+  engineering: float
+  dependency: float
+  complexity: float
+  notes: list[str]
+
+5.3 ScoredFeature
+  name: str
+  impact: float    # 0..1
+  effort: float    # 0..1 (higher is harder)
+  score: float     # combined metric
+  rationale: str
+
+5.4 ExtractorOutput
+  features: list[FeatureSpec]
+
+5.5 ScorerOutput
+  scored: list[ScoredFeature]
+
+5.6 PrioritizedOutput
+  ordered: list[ScoredFeature]
+
+5.7 State (LangGraph TypedDict)
+  raw: list[RawFeature]
+  extracted: ExtractorOutput
+  scored: ScorerOutput
+  prioritized: PrioritizedOutput
+  errors: list[str]
+
+============================================================
+6. CONFIGURATION (config.py)
+============================================================
+Weights
+  impact_weights:
+    reach (default 0.4)
+    revenue (default 0.4)
+    risk_reduction (default 0.2)
+  effort_weights:
+    engineering (default 0.5)
+    dependency (default 0.3)
+    complexity (default 0.2)
+
+ScoringPolicy
+  prioritize_metric: "RICE" | "ICE" | "ImpactMinusEffort"
+
+============================================================
+7. ORCHESTRATION (graph.py)
+============================================================
+StateGraph Nodes:
+  • extract   → extractor_node
+  • score     → scorer_node
+  • prioritize→ prioritizer_node
+
+Edges:
+  START → extract → score → prioritize → END
+
+Rationale:
+  • Linear and explicit for beginner comprehension.
+  • Each node reads/writes a distinct portion of State.
+
+============================================================
+8. AGENT LLD (nodes.py)
+============================================================
+8.1 Utility
+  _norm_hint(v:int|None, default:float) -> float
+    - Maps 1..5 → 0..1; returns default if hint missing.
+
+  _infer_defaults(desc:str) -> dict
+    - Keyword heuristics on description to seed defaults.
+      e.g., "checkout/search" → high reach,
+            "pricing/payment" → high revenue,
+            "security/compliance" → high risk_reduction,
+            "microservice/refactor" → higher engineering,
+            "depends on/integration" → higher dependency,
+            "rewrite/platform" → higher complexity.
+    - Returns: reach, revenue, risk_reduction, engineering, dependency, complexity, notes[list].
+
+8.2 Agent 1: extractor_node(state) -> state
+  Inputs:
+    state.raw: list[RawFeature]
+  Processing:
+    For each RawFeature:
+      - infer defaults via _infer_defaults(description)
+      - normalize with hints via _norm_hint (if provided)
+      - build FeatureSpec (append optional notes)
+  Outputs:
+    state.extracted: ExtractorOutput(features=list[FeatureSpec])
+  Failure Modes:
+    - ValidationError on malformed inputs → add to state.errors
+
+8.3 Agent 2: scorer_node(state) -> state
+  Inputs:
+    state.extracted: ExtractorOutput
+    state.policy: ScoringPolicy (optional; defaults used if absent)
+  Processing:
+    - impact = weighted_sum(reach, revenue, risk_reduction)
+    - effort = weighted_sum(engineering, dependency, complexity)
+    - score  = per policy:
+        ICE: impact * (1 - effort)
+        ImpactMinusEffort: impact - effort
+        RICE (proxy): (impact * (0.5 + 0.5 * reach)) / max(0.05, effort)
+    - rationale: short bullet summary from high factors
+  Outputs:
+    state.scored: ScorerOutput(scored=list[ScoredFeature])
+  Failure Modes:
+    - Missing extracted features → error; skip scoring.
+
+8.4 Agent 3: prioritizer_node(state) -> state
+  Inputs:
+    state.scored: ScorerOutput
+  Processing:
+    ordered = sorted(scored, key=score desc)
+  Outputs:
+    state.prioritized: PrioritizedOutput(ordered=ordered)
+  Failure Modes:
+    - Empty scored list → empty prioritized list.
+
+============================================================
+9. SEQUENCE FLOW (Runtime)
+============================================================
+1) CLI parses JSON → RawFeature list → state.raw
+2) START → extract:
+     - produces FeatureSpec list
+3) score:
+     - computes impact, effort, score per feature
+4) prioritize:
+     - sorts and emits ordered list
+5) END: run.py prints final JSON
+
+============================================================
+10. ERROR HANDLING & VALIDATION
+============================================================
+- Pydantic validates schema on ingestion (RawFeature) and node outputs (FeatureSpec/ScoredFeature).
+- On ValidationError, append error string to state.errors and continue if possible.
+- Scorer safeguards division by zero via max(0.05, effort).
+- Deterministic heuristics ensure results even without hints.
+
+============================================================
+11. ASSUMPTIONS
+============================================================
+- Hints 1..5 correlate roughly to Low..High magnitude; classroom calibration is acceptable.
+- Keyword heuristics are demonstrative, not exhaustive.
+- No external API calls; workshop runs offline.
+- Product/portfolio context is generic; customize keywords/weights per domain.
+
+============================================================
+12. EXTENSIBILITY
+============================================================
+- Add Agent: Constraint Checker (e.g., compliance, dependency deadlines).
+- Swap Policy: add WSJF, custom domain scoring, or multi-objective ranking.
+- Plug-in Config: move keywords/weights to YAML/JSON.
+- Telemetry: persist State snapshots at each node for audits.
+- UI: add a thin web layer to upload CSV/JSON and render tables.
+
+============================================================
+13. COMPLEXITY & PERFORMANCE
+============================================================
+- Time: O(N) over features per node; sorting O(N log N).
+- Space: O(N) for state snapshots.
+- Typical workshop inputs are tens of features → negligible runtime.
+
+============================================================
+14. TESTABILITY
+============================================================
+- Unit tests for:
+  • _norm_hint(): boundary mapping 1..5
+  • _infer_defaults(): keyword coverage & notes
+  • scorer_node(): metric math (RICE/ICE/ImpactMinusEffort)
+  • prioritizer_node(): sort stability ties
+- Golden tests with fixed inputs → deterministic outputs.
+
+============================================================
+15. SAMPLE I/O
+============================================================
+Input (RawFeature):
+  [{"name":"Checkout One-Click","description":"..."}, ...]
+
+Intermediate (FeatureSpec):
+  [{"name":"Checkout One-Click","reach":0.8,"revenue":0.8,"risk_reduction":0.2,
+     "engineering":0.6,"dependency":0.3,"complexity":0.2,"notes":["High reach","Revenue-impact"]}, ...]
+
+Output (PrioritizedOutput):
+  {"ordered":[{"name":"Checkout One-Click","impact":0.72,"effort":0.47,"score":1.55,"rationale":"High reach; Revenue impact; Engineering heavy"}, ...]}
+
+============================================================
+16. RUN & OPERATIONS
+============================================================
+Setup
+  pip install -r requirements.txt
+
+Run
+  python run.py --file samples/features.json --metric RICE
+  python run.py --json '[{"name":"Premium Upsell","description":"Pricing and conversion experiment","reach_hint":5,"revenue_hint":5,"engineering_hint":2}]' --metric ICE
+
+Observability
+  - Print final JSON; redirect to file for artifact.
+  - Optionally log state.errors for debugging.
+
+============================================================
+17. RISKS & MITIGATIONS
+============================================================
+- Risk: Heuristics misclassify domain terms.
+  Mitigation: Externalize keywords; add review loops.
+- Risk: Overfitting to one policy.
+  Mitigation: Support multiple metrics; parameterize weights.
+- Risk: Ambiguous inputs.
+  Mitigation: Encourage hints; validate and surface notes.
+
+============================================================
+18. GLOSSARY
+============================================================
+Agent: A focused step transforming typed input to typed output.
+Orchestration/Graph: Execution order and branching between agents.
+RICE/ICE: Prioritization formulas balancing impact and effort.
+Heuristics: Rule-of-thumb mappings from text to normalized factors.
+
+-- End of Document --

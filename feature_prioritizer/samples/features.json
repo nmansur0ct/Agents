@@ -1,0 +1,154 @@
+{
+  "features": [
+    {
+      "name": "One-Click Checkout",
+      "description": "Streamlined checkout process with saved payment methods and address for faster conversion",
+      "reach_hint": 5,
+      "revenue_hint": 5,
+      "risk_reduction_hint": 2,
+      "engineering_hint": 3,
+      "dependency_hint": 2,
+      "complexity_hint": 3
+    },
+    {
+      "name": "Real-time Notifications",
+      "description": "Push notifications for order updates, promotions, and system alerts using websockets",
+      "reach_hint": 4,
+      "revenue_hint": 3,
+      "risk_reduction_hint": 2,
+      "engineering_hint": 4,
+      "dependency_hint": 3,
+      "complexity_hint": 3
+    },
+    {
+      "name": "Advanced Search Engine",
+      "description": "Elasticsearch-powered search with filters, auto-complete, and relevance ranking",
+      "reach_hint": 5,
+      "revenue_hint": 4,
+      "risk_reduction_hint": 1,
+      "engineering_hint": 5,
+      "dependency_hint": 4,
+      "complexity_hint": 4
+    },
+    {
+      "name": "Security Compliance Dashboard",
+      "description": "Comprehensive security monitoring and compliance reporting for audit requirements",
+      "reach_hint": 2,
+      "revenue_hint": 2,
+      "risk_reduction_hint": 5,
+      "engineering_hint": 4,
+      "dependency_hint": 3,
+      "complexity_hint": 4
+    },
+    {
+      "name": "Mobile App MVP",
+      "description": "Native mobile application for iOS and Android with core shopping functionality",
+      "reach_hint": 5,
+      "revenue_hint": 4,
+      "risk_reduction_hint": 2,
+      "engineering_hint": 5,
+      "dependency_hint": 4,
+      "complexity_hint": 5
+    },
+    {
+      "name": "Pricing Optimization Engine",
+      "description": "Dynamic pricing algorithm based on demand, competition, and inventory levels",
+      "reach_hint": 4,
+      "revenue_hint": 5,
+      "risk_reduction_hint": 3,
+      "engineering_hint": 5,
+      "dependency_hint": 3,
+      "complexity_hint": 5
+    },
+    {
+      "name": "Customer Support Chat",
+      "description": "Live chat integration with support team and basic automation for common queries",
+      "reach_hint": 4,
+      "revenue_hint": 3,
+      "risk_reduction_hint": 2,
+      "engineering_hint": 3,
+      "dependency_hint": 3,
+      "complexity_hint": 2
+    },
+    {
+      "name": "Data Analytics Platform",
+      "description": "Comprehensive analytics dashboard with user behavior tracking and business metrics",
+      "reach_hint": 3,
+      "revenue_hint": 4,
+      "risk_reduction_hint": 3,
+      "engineering_hint": 4,
+      "dependency_hint": 4,
+      "complexity_hint": 4
+    },
+    {
+      "name": "Subscription Management",
+      "description": "Recurring billing and subscription lifecycle management for premium services",
+      "reach_hint": 3,
+      "revenue_hint": 5,
+      "risk_reduction_hint": 3,
+      "engineering_hint": 4,
+      "dependency_hint": 3,
+      "complexity_hint": 3
+    },
+    {
+      "name": "Performance Optimization",
+      "description": "Database indexing, caching layer, and CDN integration to improve site speed",
+      "reach_hint": 5,
+      "revenue_hint": 3,
+      "risk_reduction_hint": 4,
+      "engineering_hint": 3,
+      "dependency_hint": 2,
+      "complexity_hint": 3
+    },
+    {
+      "name": "Third-party Integration Hub",
+      "description": "Centralized integration platform for external services like payment processors and shipping",
+      "reach_hint": 3,
+      "revenue_hint": 4,
+      "risk_reduction_hint": 4,
+      "engineering_hint": 4,
+      "dependency_hint": 5,
+      "complexity_hint": 4
+    },
+    {
+      "name": "AI-Powered Recommendations",
+      "description": "Machine learning recommendation engine for personalized product suggestions",
+      "reach_hint": 4,
+      "revenue_hint": 4,
+      "risk_reduction_hint": 2,
+      "engineering_hint": 5,
+      "dependency_hint": 3,
+      "complexity_hint": 5
+    },
+    {
+      "name": "Multi-language Support",
+      "description": "Internationalization and localization for global market expansion",
+      "reach_hint": 3,
+      "revenue_hint": 4,
+      "risk_reduction_hint": 2,
+      "engineering_hint": 3,
+      "dependency_hint": 2,
+      "complexity_hint": 3
+    },
+    {
+      "name": "API Rate Limiting",
+      "description": "Advanced rate limiting and throttling for API security and performance",
+      "reach_hint": 2,
+      "revenue_hint": 2,
+      "risk_reduction_hint": 4,
+      "engineering_hint": 2,
+      "dependency_hint": 1,
+      "complexity_hint": 2
+    },
+    {
+      "name": "Social Media Login",
+      "description": "OAuth integration with Facebook, Google, and Twitter for easier signup",
+      "reach_hint": 4,
+      "revenue_hint": 3,
+      "risk_reduction_hint": 3,
+      "engineering_hint": 2,
+      "dependency_hint": 3,
+      "complexity_hint": 2
+    }
+  ]
+}

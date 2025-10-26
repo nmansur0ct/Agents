@@ -1,0 +1,25 @@
+# Feature Prioritization Assistant Dependencies
+# Core LangGraph and Pydantic for orchestration and validation
+
+langchain-core>=0.1.0
+
+# CLI and data processing
+click>=8.0.0
+pandas>=1.5.0
+numpy>=1.21.0
+
+# JSON and CSV handling
+python-json-logger>=2.0.0
+
+# Development and testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# Optional visualization
+matplotlib>=3.5.0
+seaborn>=0.11.0
+
+langgraph>=0.2.34
+pydantic>=2.8.2
+openai>=1.47.0
+python-dotenv>=1.0.1
