@@ -1,5 +1,41 @@
 # Technical Deep Dive: Agentic Implementation Details
 
+## Enhanced Agentic Prompt Architecture
+
+### Agent Identity and Role Definition
+
+The system now implements **proper agentic identity** where each LLM interaction begins with explicit agent role definition:
+
+```python
+# Feature Analysis Agent
+prompt = f"""You are an agent for feature analysis and factor assessment. Your role is to analyze product features and estimate normalized business factors.
+
+From the feature description below, estimate normalized factors in [0,1] range:
+- reach: How many users/customers will this impact?
+- revenue: How much will this contribute to revenue growth?
+- risk_reduction: How much does this reduce business/technical risk?
+- engineering: How much engineering effort is required?
+- dependency: How many external dependencies/integrations?
+- complexity: How complex is the implementation?
+
+Feature Description: {feature_desc}
+
+Return STRICT JSON with keys: reach, revenue, risk_reduction, engineering, dependency, complexity, notes (array of short analysis strings)."""
+
+# Business Rationale Agent  
+prompt = f"""You are an agent for business rationale generation. Your role is to create clear, actionable business justifications for feature prioritization decisions.
+
+Analyze this feature's priority score and generate a concise business rationale..."""
+```
+
+### Key Benefits of Agentic Prompts
+
+1. **Clear Role Boundaries**: Each agent knows its specific function and domain
+2. **Consistent Behavior**: Agents maintain character across different feature types
+3. **Structured Output**: Simplified JSON format focusing on core factors
+4. **Enhanced Reasoning**: Agents understand they are autonomous decision-makers
+5. **Improved Reliability**: More predictable responses due to clear expectations
+
 ## Agent Architecture Patterns
 
 ### 1. State-Based Agent Communication
@@ -111,26 +147,31 @@ The system uses **structured prompts** for consistent LLM reasoning:
 ```python
 def construct_analysis_prompt(feature_desc: str) -> str:
     """
-    Engineered prompt for consistent LLM analysis
+    Engineered prompt for consistent LLM analysis with proper agent definition
     """
-    return f"""Analyze this feature description and assess business factors:
+    return f"""You are an agent for feature analysis and factor assessment. Your role is to analyze product features and estimate normalized business factors.
 
-Feature: {feature_desc}
+From the feature description below, estimate normalized factors in [0,1] range:
+- reach: How many users/customers will this impact? (0.0=very few, 1.0=almost all)
+- revenue: How much will this contribute to revenue growth? (0.0=none, 1.0=significant)  
+- risk_reduction: How much does this reduce business/technical risk? (0.0=none, 1.0=critical)
+- engineering: How much engineering effort is required? (0.0=minimal, 1.0=massive)
+- dependency: How many external dependencies/integrations? (0.0=none, 1.0=many complex)
+- complexity: How complex is the implementation? (0.0=trivial, 1.0=extremely complex)
 
-For each factor, provide a score (0.0-1.0) and brief rationale:
+Feature Description: {feature_desc}
 
-1. REACH: How many users/customers will this impact?
-2. REVENUE: How much will this contribute to revenue growth?
-3. RISK_REDUCTION: How much does this reduce business/technical risk?
-4. ENGINEERING: How much engineering effort is required?
-5. DEPENDENCY: How many external dependencies/integrations?
-6. COMPLEXITY: How complex is the implementation?
+Return STRICT JSON with keys: reach, revenue, risk_reduction, engineering, dependency, complexity, notes (array of short analysis strings).
 
 Respond with JSON in this exact format:
 {{
   "reach": 0.5,
-  "reach_rationale": "explanation",
-  ...
+  "revenue": 0.5,
+  "risk_reduction": 0.5,
+  "engineering": 0.5,
+  "dependency": 0.5,
+  "complexity": 0.5,
+  "notes": ["analysis point 1", "analysis point 2", "analysis point 3"]
 }}"""
 ```
 

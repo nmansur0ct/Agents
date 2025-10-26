@@ -259,19 +259,25 @@ python run.py --file samples/features.json --llm --model gpt-4o-mini --verbose
 
 ## LLM Integration Features
 
+The system uses **agentic LLM prompts** where each AI component is explicitly defined as a specialized agent:
+
+- **Feature Analysis Agent**: Analyzes feature descriptions and estimates business factors
+- **Rationale Generation Agent**: Creates business justifications for prioritization decisions
+
 When using `--llm`, you'll see detailed logging:
 
 ```
 ✓ Loaded environment variables from /Users/n0m08hp/Agents/.env
 🔍 LLM Factor Analysis requested for feature: 'Mobile Payment Integration...'
-🤖 GPT LLM invoked for analysis using model: gpt-3.5-turbo
-   📝 Prompt length: 1310 characters
+🤖 GPT LLM invoked for analysis using model: gpt-4o-mini
+   📝 Prompt length: 852 characters
    🎛️  Temperature: 0.3
    🌐 Making OpenAI API call...
-   ✅ LLM Analysis complete - received 8 fields
+   ✅ LLM Analysis complete - received 7 fields
    ✨ LLM Factor Analysis completed successfully
-      💡 High revenue potential due to payment optimization
-      💡 Moderate engineering effort for API integration
+      💡 High customer adoption potential across demographics
+      💡 Significant revenue impact through payment optimization
+      💡 Moderate engineering complexity for secure integration
 ```
 
 ### LLM Logging Icons Guide

@@ -118,37 +118,50 @@ The system employs **GPT-4** and other advanced models to perform deep analysis:
 ```python
 def _enhance_with_llm(feature_desc: str, config: Config) -> Dict[str, Any]:
     """
-    Agent uses LLM to reason about business factors
+    Agent uses LLM to reason about business factors with proper agent identity
     """
-    prompt = f"""Analyze this feature and assess business factors:
+    prompt = f"""You are an agent for feature analysis and factor assessment. Your role is to analyze product features and estimate normalized business factors.
     
-    Feature: {feature_desc}
+    From the feature description below, estimate normalized factors in [0,1] range:
+    - reach: User impact analysis (0.0=very few, 1.0=almost all)
+    - revenue: Business value reasoning (0.0=none, 1.0=significant)
+    - risk_reduction: Strategic importance (0.0=none, 1.0=critical)
+    - engineering: Technical complexity (0.0=minimal, 1.0=massive)
+    - dependency: Integration challenges (0.0=none, 1.0=many complex)
+    - complexity: Implementation difficulty (0.0=trivial, 1.0=extremely complex)
     
-    Provide intelligent assessment for:
-    1. REACH: User impact analysis
-    2. REVENUE: Business value reasoning  
-    3. RISK_REDUCTION: Strategic importance
-    4. ENGINEERING: Technical complexity
-    5. DEPENDENCY: Integration challenges
-    6. COMPLEXITY: Implementation difficulty
+    Feature Description: {feature_desc}
+    
+    Return STRICT JSON with analysis factors and insights array.
     """
 ```
 
 ### Key Agentic Capabilities
 
-#### 1. **Semantic Understanding**
+#### 1. **Proper Agent Identity and Role Definition**
+- All agents are explicitly defined with clear roles and responsibilities
+- **Feature Analysis Agent**: "You are an agent for feature analysis and factor assessment"
+- **Rationale Generation Agent**: "You are an agent for business rationale generation"
+- Each agent understands its specific domain expertise and decision-making scope
+
+#### 2. **Semantic Understanding**
 - Agents understand business context, not just keywords
 - Example: "ML-powered search" → Agent recognizes high engineering effort + high user value
 
-#### 2. **Adaptive Reasoning**
+#### 3. **Adaptive Reasoning**
 - Agents adjust recommendations based on domain context
 - Example: E-commerce features weighted differently than B2B tools
 
-#### 3. **Confidence Tracking**
-- Agents report confidence levels in their assessments
-- Example: "High confidence" for clear requirements, "Low confidence" for ambiguous features
+#### 4. **Structured Output with Analysis Insights**
+- Agents provide structured JSON responses with analysis notes
+- Output includes both quantified factors and qualitative insights
+- Example: `{"reach": 0.8, "notes": ["broad user impact", "high market visibility", "cross-platform benefits"]}`
 
-#### 4. **Graceful Degradation**
+#### 5. **Confidence Tracking**
+- Agents can express uncertainty and provide confidence indicators
+- Transparent about analysis limitations and assumptions
+
+#### 6. **Graceful Degradation**
 - If LLM unavailable, agents fall back to heuristic analysis
 - System never fails completely, maintains availability
 

@@ -95,36 +95,42 @@ def _enhance_with_llm(feature_desc: str, config: Config) -> Dict[str, Any]:
     print(f"🔍 LLM Factor Analysis requested for feature: '{feature_desc[:50]}{'...' if len(feature_desc) > 50 else ''}'")
     
     try:
-        # Construct LLM prompt for factor analysis
-        prompt = f"""Analyze this feature description and assess the following factors on a 0.0 to 1.0 scale:
+        # Construct LLM prompt for factor analysis with anti-hallucination constraints
+        prompt = f"""You are an agent for feature analysis and factor assessment. Your role is to analyze ONLY the provided feature description and estimate normalized business factors based on the given information.
 
-Feature: {feature_desc}
+CRITICAL INSTRUCTIONS:
+- Base your analysis ONLY on the feature description provided
+- Do NOT make assumptions about company size, industry, or user base unless explicitly stated
+- Do NOT invent technical details not mentioned in the description
+- Use conservative estimates when information is limited
+- If a factor cannot be determined from the description, use 0.5 as a neutral estimate
 
-For each factor, provide a score (0.0-1.0) and brief rationale:
+Analyze this feature description and estimate factors in [0,1] range:
 
-1. REACH: How many users/customers will this impact? (0.0=very few, 1.0=almost all)
-2. REVENUE: How much will this contribute to revenue growth? (0.0=none, 1.0=significant)
-3. RISK_REDUCTION: How much does this reduce business/technical risk? (0.0=none, 1.0=critical)
-4. ENGINEERING: How much engineering effort is required? (0.0=minimal, 1.0=massive)
-5. DEPENDENCY: How many external dependencies/integrations? (0.0=none, 1.0=many complex)
-6. COMPLEXITY: How complex is the implementation? (0.0=trivial, 1.0=extremely complex)
+Feature Description: {feature_desc}
 
-Respond with JSON in this exact format:
+Factor Guidelines:
+- reach: User impact based on description (0.0=very few users, 1.0=all users) 
+- revenue: Revenue contribution based on stated benefits (0.0=no revenue impact, 1.0=major revenue driver)
+- risk_reduction: Risk mitigation based on described problems (0.0=no risk reduction, 1.0=critical risk mitigation)
+- engineering: Development effort based on technical complexity mentioned (0.0=trivial change, 1.0=major system rebuild)
+- dependency: External integrations mentioned in description (0.0=no dependencies, 1.0=many complex integrations)
+- complexity: Implementation difficulty based on feature scope (0.0=simple feature, 1.0=extremely complex system)
+
+IMPORTANT: 
+- Only reference information explicitly stated in the feature description
+- Do not assume unstated technical requirements or business context
+- Provide 2-3 brief analysis notes based only on the given description
+
+Return STRICT JSON format:
 {{
   "reach": 0.5,
-  "reach_rationale": "brief explanation",
   "revenue": 0.5,
-  "revenue_rationale": "brief explanation", 
   "risk_reduction": 0.5,
-  "risk_reduction_rationale": "brief explanation",
   "engineering": 0.5,
-  "engineering_rationale": "brief explanation",
   "dependency": 0.5,
-  "dependency_rationale": "brief explanation",
   "complexity": 0.5,
-  "complexity_rationale": "brief explanation",
-  "analysis_confidence": "high/medium/low",
-  "key_insights": ["insight1", "insight2"]
+  "notes": ["observation based on description", "specific detail mentioned", "conservative assessment reason"]
 }}"""
 
         # Call LLM
@@ -137,10 +143,10 @@ Respond with JSON in this exact format:
         
         if response and not error:
             print(f"   ✨ LLM Factor Analysis completed successfully")
-            # Log key insights if available
-            if 'key_insights' in response and response['key_insights']:
-                for insight in response['key_insights'][:2]:  # Show first 2 insights
-                    print(f"      💡 {insight}")
+            # Log analysis notes if available
+            if 'notes' in response and response['notes']:
+                for note in response['notes'][:3]:  # Show first 3 notes
+                    print(f"      💡 {note}")
         else:
             print(f"   ⚠️  LLM Factor Analysis failed, falling back to keyword analysis")
         
@@ -168,21 +174,36 @@ def _generate_rationale(feature: ScoredFeature, config: Config) -> str:
     print(f" LLM Rationale Generation requested for feature: '{feature.name}'")
     
     try:
-        # Construct LLM prompt for rationale generation
-        prompt = f"""Generate a concise business rationale for this feature's priority score.
+        # Construct LLM prompt for rationale generation with anti-hallucination constraints
+        prompt = f"""You are an agent for business rationale generation. Your role is to create factual, evidence-based business justifications using ONLY the provided data.
 
-Feature: {feature.name}
+CRITICAL INSTRUCTIONS:
+- Base your rationale ONLY on the provided scores and feature name
+- Do NOT make assumptions about market conditions, competitors, or business strategy
+- Do NOT invent technical details or implementation specifics
+- Use only the numerical scores provided to justify the prioritization
+- Keep explanations factual and conservative
+
+Provided Data:
+Feature Name: {feature.name}
 Priority Score: {feature.score:.2f}
+Impact Score: {feature.impact:.2f} 
+Effort Score: {feature.effort:.2f}
 
-Factors:
-- Impact Score: {feature.impact:.2f}
-- Effort Score: {feature.effort:.2f}
+Generate a 2-3 sentence business rationale that:
+1. References the actual numerical scores provided
+2. Explains the mathematical relationship between impact and effort
+3. States the relative priority position without speculating on broader business context
 
-Provide a 2-3 sentence business rationale explaining why this score makes sense and what the key trade-offs are. Focus on business value vs effort. Be specific and actionable.
+IMPORTANT:
+- Only use the feature name and scores provided
+- Do not assume business domain, company size, or market conditions
+- Do not invent strategic implications beyond what the scores indicate
+- Keep language factual and evidence-based
 
-Respond with JSON:
+Return STRICT JSON format:
 {{
-  "rationale": "business rationale text here"
+  "rationale": "factual rationale based only on provided scores and feature name"
 }}"""
 
         # Call LLM
@@ -230,16 +251,12 @@ def extractor_node(state: State, config: Optional[Config] = None) -> State:
                 for factor in ['reach', 'revenue', 'risk_reduction', 'engineering', 'dependency', 'complexity']:
                     if factor in llm_analysis and llm_analysis[factor] is not None:
                         defaults[factor] = max(0.0, min(1.0, llm_analysis[factor]))  # Clamp to valid range
-                        rationale_key = f"{factor}_rationale"
-                        if rationale_key in llm_analysis:
-                            final_notes.append(f"LLM {factor.replace('_', ' ')}: {llm_analysis[rationale_key]}")
                 
-                # Add overall insights
-                if 'key_insights' in llm_analysis and llm_analysis['key_insights']:
-                    final_notes.extend([f"LLM insight: {insight}" for insight in llm_analysis['key_insights']])
+                # Add LLM analysis notes
+                if 'notes' in llm_analysis and llm_analysis['notes']:
+                    final_notes.extend([f"LLM: {note}" for note in llm_analysis['notes']])
                 
-                if 'analysis_confidence' in llm_analysis:
-                    final_notes.append(f"LLM confidence: {llm_analysis['analysis_confidence']}")
+                final_notes.append(f"LLM factor analysis applied")
             
             # Build FeatureSpec with normalized values
             feature_spec = FeatureSpec(
