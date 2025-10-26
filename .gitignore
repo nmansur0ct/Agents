@@ -1,0 +1,6 @@
+.github/instructions/wmt-copilot.instructions.md
+.env
+*.env
+*.env.*.local
+__pycache__
+.DS_Store
