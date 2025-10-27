@@ -1,6 +1,6 @@
-# 🎯 **TPM Activity: Adding FeasibilityAgent for Risk Assessment**
+#  **TPM Activity: Adding FeasibilityAgent for Risk Assessment**
 
-## **📦 Repository Setup**
+## ** Repository Setup**
 
 ### **Git Repository Information:**
 - **Repository URL:** `https://github.com/nmansur0ct/Agents.git`
@@ -414,10 +414,10 @@ python run.py --file samples/features.json --llm --detailed --monitoring
 python run.py --file samples/features.json --llm --monitoring --save-monitoring-report feasibility_llm_test.json
 
 # Expected output shows feasibility_agent with LLM usage
-# 🤖 extractor_agent: ✅ Success Rate: 100.0%
-# 🤖 feasibility_agent: ✅ Success Rate: 100.0%  ← NEW AGENT WITH LLM
-# 🤖 scorer_agent: ✅ Success Rate: 100.0%
-# 🤖 prioritizer_agent: ✅ Success Rate: 100.0%
+#  extractor_agent: ✅ Success Rate: 100.0%
+#  feasibility_agent: ✅ Success Rate: 100.0%  ← NEW AGENT WITH LLM
+#  scorer_agent: ✅ Success Rate: 100.0%
+#  prioritizer_agent: ✅ Success Rate: 100.0%
 #
 # 📝 AUDIT EVENTS: 8
 # ├─ llm_analysis: 3 events (LLM risk assessments)
@@ -425,7 +425,7 @@ python run.py --file samples/features.json --llm --monitoring --save-monitoring-
 # └─ agent_execution: 4 events
 ```
 
-### **📊 Test with Different Industry Datasets**
+### ** Test with Different Industry Datasets**
 
 The repository includes multiple sample datasets for comprehensive testing:
 
@@ -453,7 +453,7 @@ These datasets provide different risk profiles and complexity patterns to thorou
 
 ---
 
-## **⚙️ Configuration Options**
+## ** Configuration Options**
 
 ```python
 # Risk Assessment Settings
