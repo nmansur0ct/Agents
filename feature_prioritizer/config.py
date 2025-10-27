@@ -42,7 +42,7 @@ class Config(BaseModel):
     
 
     # Monitoring and observability configuration
-    monitoring: MonitoringConfig = Field(default_factory=lambda: MonitoringConfig(), description="Monitoring and observability settings")
+    monitoring: MonitoringConfig = Field(default_factory=MonitoringConfig, description="Monitoring and observability settings")
     
     # Keyword heuristics for automatic inference
     keyword_mappings: Dict[str, Dict[str, float]] = Field(

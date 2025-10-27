@@ -9,12 +9,21 @@ from models import RawFeature, State
 from nodes import extractor_node, scorer_node, prioritizer_node
 from config import Config
 
+# Import monitoring functionality
+from monitoring import initialize_monitoring, get_system_monitor
+
 class FeaturePrioritizationGraph:
     """LangGraph orchestration for feature prioritization pipeline."""
     
     def __init__(self, config: Optional[Config] = None):
         """Initialize the graph with optional configuration."""
         self.config = config or Config.default()
+        
+
+        # Initialize monitoring if enabled
+        if self.config.monitoring.enabled:
+            initialize_monitoring(self.config.model_dump())
+        
         self.graph = self._build_graph()
 
     def _build_graph(self):
@@ -134,6 +143,29 @@ class FeaturePrioritizationGraph:
                 }
         
         return results
+    
+
+    def get_monitoring_report(self):
+        """Get comprehensive monitoring report if monitoring is enabled."""
+        if self.config.monitoring.enabled:
+            monitor = get_system_monitor()
+            return monitor.generate_monitoring_report()
+        return None
+    
+    def print_performance_summary(self):
+        """Print performance summary to console if monitoring is enabled."""
+        if self.config.monitoring.enabled:
+            monitor = get_system_monitor()
+            monitor.print_performance_summary()
+        else:
+            print("📊 Monitoring is disabled. Enable monitoring in config to see performance metrics.")
+    
+    def save_monitoring_report(self, filename: Optional[str] = None):
+        """Save monitoring report to file if monitoring is enabled."""
+        if self.config.monitoring.enabled:
+            monitor = get_system_monitor()
+            return monitor.save_monitoring_report(filename)
+        return None
 
 # Convenience function for simple usage
 def prioritize_features(raw_features: List[RawFeature], config: Optional[Config] = None) -> List[dict]:

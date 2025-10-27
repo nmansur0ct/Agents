@@ -63,9 +63,9 @@ class State(TypedDict, total=False):
 # Additional models for configuration and analysis
 class ImpactWeights(BaseModel):
     """Weights for impact calculation."""
-    reach: float = Field(default=0.4, ge=0, le=1, description="Weight for reach factor")
-    revenue: float = Field(default=0.4, ge=0, le=1, description="Weight for revenue factor")
-    risk_reduction: float = Field(default=0.2, ge=0, le=1, description="Weight for risk reduction factor")
+    reach: float = Field(0.4, ge=0, le=1, description="Weight for reach factor")
+    revenue: float = Field(0.4, ge=0, le=1, description="Weight for revenue factor")
+    risk_reduction: float = Field(0.2, ge=0, le=1, description="Weight for risk reduction factor")
     
     @validator('reach', 'revenue', 'risk_reduction')
     def validate_weights_sum(cls, v, values):
@@ -78,9 +78,9 @@ class ImpactWeights(BaseModel):
 
 class EffortWeights(BaseModel):
     """Weights for effort calculation."""
-    engineering: float = Field(default=0.5, ge=0, le=1, description="Weight for engineering effort")
-    dependency: float = Field(default=0.3, ge=0, le=1, description="Weight for dependency complexity")
-    complexity: float = Field(default=0.2, ge=0, le=1, description="Weight for implementation complexity")
+    engineering: float = Field(0.5, ge=0, le=1, description="Weight for engineering effort")
+    dependency: float = Field(0.3, ge=0, le=1, description="Weight for dependency complexity")
+    complexity: float = Field(0.2, ge=0, le=1, description="Weight for implementation complexity")
     
     @validator('engineering', 'dependency', 'complexity')
     def validate_weights_sum(cls, v, values):
@@ -100,12 +100,12 @@ class AgentExecutionRecord(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now, description="Execution timestamp")
     duration: float = Field(..., ge=0, description="Execution duration in seconds")
     success: bool = Field(..., description="Whether execution was successful")
-    input_size: int = Field(0, ge=0, description="Size of input data")
-    output_size: int = Field(0, ge=0, description="Size of output data")
-    llm_calls: int = Field(0, ge=0, description="Number of LLM API calls made")
-    llm_tokens: int = Field(0, ge=0, description="Total tokens used in LLM calls")
-    error_message: Optional[str] = Field(None, description="Error message if execution failed")
-    confidence_score: Optional[float] = Field(None, ge=0, le=1, description="Confidence in the result")
+    input_size: int = Field(default=0, ge=0, description="Size of input data")
+    output_size: int = Field(default=0, ge=0, description="Size of output data")
+    llm_calls: int = Field(default=0, ge=0, description="Number of LLM API calls made")
+    llm_tokens: int = Field(default=0, ge=0, description="Total tokens used in LLM calls")
+    error_message: Optional[str] = Field(default=None, description="Error message if execution failed")
+    confidence_score: Optional[float] = Field(default=None, ge=0, le=1, description="Confidence in the result")
 
 class SystemHealthMetrics(BaseModel):
     """System-wide health and performance metrics."""
@@ -113,9 +113,9 @@ class SystemHealthMetrics(BaseModel):
     total_executions: int = Field(..., ge=0, description="Total number of agent executions")
     overall_success_rate: float = Field(..., ge=0, le=1, description="Overall system success rate")
     executions_per_minute: float = Field(..., ge=0, description="Average executions per minute")
-    total_llm_calls: int = Field(0, ge=0, description="Total LLM API calls")
-    total_llm_tokens: int = Field(0, ge=0, description="Total tokens consumed")
-    avg_tokens_per_execution: float = Field(0, ge=0, description="Average tokens per execution")
+    total_llm_calls: int = Field(default=0, ge=0, description="Total LLM API calls")
+    total_llm_tokens: int = Field(default=0, ge=0, description="Total tokens consumed")
+    avg_tokens_per_execution: float = Field(default=0, ge=0, description="Average tokens per execution")
 
 class AgentPerformanceMetrics(BaseModel):
     """Performance metrics for individual agents."""
@@ -126,10 +126,10 @@ class AgentPerformanceMetrics(BaseModel):
     total_executions: int = Field(..., ge=0, description="Total number of executions")
     success_rate: float = Field(..., ge=0, le=1, description="Success rate for this agent")
     error_rate: float = Field(..., ge=0, le=1, description="Error rate for this agent")
-    total_llm_calls: int = Field(0, ge=0, description="Total LLM calls by this agent")
-    total_llm_tokens: int = Field(0, ge=0, description="Total tokens used by this agent")
-    avg_tokens_per_call: float = Field(0, ge=0, description="Average tokens per LLM call")
-    mean_time_between_failures: float = Field(float('inf'), ge=0, description="MTBF in seconds")
+    total_llm_calls: int = Field(default=0, ge=0, description="Total LLM calls by this agent")
+    total_llm_tokens: int = Field(default=0, ge=0, description="Total tokens used by this agent")
+    avg_tokens_per_call: float = Field(default=0, ge=0, description="Average tokens per LLM call")
+    mean_time_between_failures: float = Field(default=float('inf'), ge=0, description="MTBF in seconds")
 
 class AuditLogEntry(BaseModel):
     """Structured audit log entry for agent decisions."""
@@ -143,7 +143,7 @@ class AuditLogEntry(BaseModel):
     confidence_score: float = Field(..., ge=0, le=1, description="Confidence in the decision")
     execution_time: float = Field(..., ge=0, description="Execution duration in seconds")
     success: bool = Field(..., description="Whether operation was successful")
-    error_details: Optional[str] = Field(None, description="Error details if operation failed")
+    error_details: Optional[str] = Field(default=None, description="Error details if operation failed")
 
 class MonitoringReport(BaseModel):
     """Comprehensive monitoring report."""
@@ -167,6 +167,6 @@ class MonitoringConfig(BaseModel):
     log_directory: str = Field(default="logs", description="Directory for log files")
     audit_trail_enabled: bool = Field(default=True, description="Whether to maintain audit trail")
     performance_metrics_enabled: bool = Field(default=True, description="Whether to collect performance metrics")
-    alert_thresholds: AlertThresholds = Field(default_factory=lambda: AlertThresholds(), description="Alert thresholds")
+    alert_thresholds: AlertThresholds = Field(default_factory=AlertThresholds, description="Alert thresholds")
     report_interval_minutes: int = Field(default=60, gt=0, description="Interval for generating monitoring reports")
     retention_days: int = Field(default=30, gt=0, description="Number of days to retain monitoring data")

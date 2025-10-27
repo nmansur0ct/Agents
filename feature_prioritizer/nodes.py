@@ -14,6 +14,9 @@ from models import (
 from config import Config, ScoringPolicy
 from llm_utils import call_openai_json
 
+# Import monitoring functionality
+from monitoring import get_system_monitor
+
 def _norm_hint(hint_value: Optional[int] = None, default: float = 0.5) -> float:
     """
     Normalize hint value from 1-5 scale to 0-1 scale.
@@ -231,6 +234,17 @@ def extractor_node(state: State, config: Optional[Config] = None) -> State:
     Agent 1: Feature Extractor
     Converts RawFeature list to normalized FeatureSpec list.
     """
+
+    # Apply monitoring if enabled
+    if config and config.monitoring.enabled:
+        monitor = get_system_monitor()
+        decorator = monitor.get_monitoring_decorator("extractor_agent", "extract_features")
+        return decorator(_extractor_node_impl)(state, config)
+    else:
+        return _extractor_node_impl(state, config)
+
+def _extractor_node_impl(state: State, config: Optional[Config] = None) -> State:
+    """Implementation of extractor node with monitoring support."""
     try:
         if config is None:
             config = Config.default()
@@ -287,6 +301,17 @@ def scorer_node(state: State, config: Optional[Config] = None) -> State:
     Agent 2: Impact-Effort Scorer
     Computes impact and effort scores using weighted sums.
     """
+
+    # Apply monitoring if enabled
+    if config and config.monitoring.enabled:
+        monitor = get_system_monitor()
+        decorator = monitor.get_monitoring_decorator("scorer_agent", "score_features")
+        return decorator(_scorer_node_impl)(state, config)
+    else:
+        return _scorer_node_impl(state, config)
+
+def _scorer_node_impl(state: State, config: Optional[Config] = None) -> State:
+    """Implementation of scorer node with monitoring support."""
     try:
         if config is None:
             config = Config.default()
@@ -378,6 +403,17 @@ def prioritizer_node(state: State, config: Optional[Config] = None) -> State:
     Agent 3: Prioritizer
     Sorts features by score in descending order.
     """
+
+    # Apply monitoring if enabled
+    if config and config.monitoring.enabled:
+        monitor = get_system_monitor()
+        decorator = monitor.get_monitoring_decorator("prioritizer_agent", "prioritize_features")
+        return decorator(_prioritizer_node_impl)(state, config)
+    else:
+        return _prioritizer_node_impl(state, config)
+
+def _prioritizer_node_impl(state: State, config: Optional[Config] = None) -> State:
+    """Implementation of prioritizer node with monitoring support."""
     try:
         if config is None:
             config = Config.default()
