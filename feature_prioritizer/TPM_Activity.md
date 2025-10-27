@@ -23,6 +23,7 @@ cd feature_prioritizer
 git pull origin v2
 ```
 
+
 ### **Working with Authentication:**
 ```bash
 # Option 1: Use token in URL (for one-time operations)
@@ -31,6 +32,21 @@ git clone https://GIT_TOKEN@github.com/nmansur0ct/Agents.git
 # Option 2: Set up authenticated remote (recommended)
 git remote add github-auth https://GIT_TOKEN@github.com/nmansur0ct/Agents.git
 git push github-auth v2  # Push changes using token
+```
+
+### **Create LLM configuration in .envfile**
+```bash
+crate file .env under /feature_prioritizer
+add 
+# This .env file contains environment variables for the feature prioritizer application.
+# It includes the OpenAI API key and other configuration settings for LLM integration.
+# OpenAI API Key
+OPENAI_API_AGENT_KEY=sk-proj-xxxxxx
+# LLM Configuration
+LLM_MODEL=gpt-3.5-turbo
+LLM_TEMPERATURE=0.3
+LLM_MAX_TOKENS=500
+LLM_TIMEOUT=30
 ```
 
 ---
