@@ -3,24 +3,25 @@
 ## Table of Contents
 
 1. [Executive Summary](#executive-summary)
-2. [What Makes This "Agentic"?](#what-makes-this-agentic)
-3. [Architecture Overview](#architecture-overview)
-4. [Enhanced Agentic Prompt Architecture](#enhanced-agentic-prompt-architecture)
-5. [Agent Architecture Patterns](#agent-architecture-patterns)
-6. [LangGraph Orchestration Details](#langgraph-orchestration-details)
-7. [LLM Reasoning Implementation](#llm-reasoning-implementation)
-8. [Agent Intelligence Mechanisms](#agent-intelligence-mechanisms)
-9. [Business Value Proposition](#business-value-proposition)
-10. [Technical Implementation Benefits](#technical-implementation-benefits)
-11. [Configuration and Extensibility](#configuration-and-extensibility)
-12. [Error Handling and Resilience](#error-handling-and-resilience)
-13. [Performance Optimizations](#performance-optimizations)
-14. [Testing and Validation](#testing-and-validation)
-15. [Monitoring and Observability](#monitoring-and-observability)
-16. [Security and Privacy](#security-and-privacy)
-17. [Implementation for Enterprise Teams](#implementation-for-enterprise-teams)
-18. [Comparison with Traditional Solutions](#comparison-with-traditional-solutions)
-19. [Future Roadmap](#future-roadmap)
+2. [Prioritization Metrics Framework](#prioritization-metrics-framework)
+3. [What Makes This "Agentic"?](#what-makes-this-agentic)
+4. [Architecture Overview](#architecture-overview)
+5. [Enhanced Agentic Prompt Architecture](#enhanced-agentic-prompt-architecture)
+6. [Agent Architecture Patterns](#agent-architecture-patterns)
+7. [LangGraph Orchestration Details](#langgraph-orchestration-details)
+8. [LLM Reasoning Implementation](#llm-reasoning-implementation)
+9. [Agent Intelligence Mechanisms](#agent-intelligence-mechanisms)
+10. [Business Value Proposition](#business-value-proposition)
+11. [Technical Implementation Benefits](#technical-implementation-benefits)
+12. [Configuration and Extensibility](#configuration-and-extensibility)
+13. [Error Handling and Resilience](#error-handling-and-resilience)
+14. [Performance Optimizations](#performance-optimizations)
+15. [Testing and Validation](#testing-and-validation)
+16. [Monitoring and Observability](#monitoring-and-observability)
+17. [Security and Privacy](#security-and-privacy)
+18. [Implementation for Enterprise Teams](#implementation-for-enterprise-teams)
+19. [Comparison with Traditional Solutions](#comparison-with-traditional-solutions)
+20. [Future Roadmap](#future-roadmap)
 
 ---
 
@@ -35,6 +36,296 @@ This Feature Prioritization Assistant implements a **true agentic architecture**
 - **Adaptive Reasoning**: System learns from patterns and improves recommendations
 - **Transparent Audit Trail**: Full visibility into agent decisions and reasoning
 - **Graceful Degradation**: Works with or without LLM enhancement
+
+---
+
+## Prioritization Metrics Framework
+
+The Feature Prioritization system supports three proven methodologies for scoring and ranking features. Each methodology provides a different lens for evaluating features based on organizational priorities and contexts.
+
+### RICE Framework (Reach × Impact × Confidence ÷ Effort)
+
+**RICE** is a comprehensive scoring framework developed by Intercom that quantifies feature value through four key dimensions:
+
+#### Components of RICE
+
+| **Factor** | **Definition** | **Scale** | **Example** |
+|------------|----------------|-----------|-------------|
+| **Reach** | Number of users/customers affected per time period | Absolute numbers | 1000 users/month |
+| **Impact** | Degree of positive effect on each user | 0.25, 0.5, 1, 2, 3 | 2 = High impact |
+| **Confidence** | How certain you are about your estimates | Percentage | 80% = High confidence |
+| **Effort** | Amount of work required (person-months) | Absolute numbers | 3 person-months |
+
+#### RICE Calculation Formula
+
+```
+RICE Score = (Reach × Impact × Confidence) ÷ Effort
+```
+
+#### Agent Implementation
+
+```python
+def calculate_rice_score(feature: FeatureSpec, config: Config) -> float:
+    """
+    Calculate RICE score with agent-enhanced factor assessment
+    """
+    # Convert normalized factors to RICE scale
+    reach = feature.reach * config.max_reach_per_period  # e.g., 0.8 × 10,000 = 8,000 users
+    impact = convert_to_rice_impact(feature.revenue, feature.risk_reduction)  # 0.25-3 scale
+    confidence = calculate_confidence(feature.llm_analysis, feature.heuristic_match)  # 0-100%
+    effort = feature.engineering * config.max_effort_months  # e.g., 0.6 × 12 = 7.2 months
+    
+    rice_score = (reach * impact * confidence / 100) / max(effort, 0.1)
+    
+    return rice_score
+
+def convert_to_rice_impact(revenue_factor: float, risk_factor: float) -> float:
+    """
+    Convert normalized factors to RICE impact scale (0.25, 0.5, 1, 2, 3)
+    """
+    combined_impact = (revenue_factor * 0.7) + (risk_factor * 0.3)
+    
+    if combined_impact >= 0.9: return 3.0    # Massive impact
+    elif combined_impact >= 0.7: return 2.0  # High impact
+    elif combined_impact >= 0.5: return 1.0  # Medium impact
+    elif combined_impact >= 0.3: return 0.5  # Low impact
+    else: return 0.25                        # Minimal impact
+```
+
+#### When to Use RICE
+- **Large organizations** with diverse user bases
+- **Data-driven cultures** that value quantification
+- **Strategic planning** requiring confidence tracking
+- **Resource-constrained** environments needing effort optimization
+
+#### RICE Advantages
+- ✅ **Comprehensive**: Covers all major prioritization dimensions
+- ✅ **Quantitative**: Provides comparable numerical scores
+- ✅ **Confidence-aware**: Incorporates uncertainty into decisions
+- ✅ **Effort-conscious**: Explicitly considers resource requirements
+
+#### RICE Limitations
+- ❌ **Data-intensive**: Requires accurate reach and effort estimates
+- ❌ **Complex**: Multiple variables can be overwhelming
+- ❌ **Bias-prone**: Confidence scores can be subjective
+
+---
+
+### ICE Framework (Impact × Confidence × Ease)
+
+**ICE** is a simplified scoring framework that emphasizes quick decision-making while maintaining rigor across three key dimensions:
+
+#### Components of ICE
+
+| **Factor** | **Definition** | **Scale** | **Interpretation** |
+|------------|----------------|-----------|-------------------|
+| **Impact** | Business value potential | 1-10 | 10 = Game-changing impact |
+| **Confidence** | Certainty in your assessment | 1-10 | 10 = Completely certain |
+| **Ease** | Implementation simplicity (inverse of effort) | 1-10 | 10 = Trivially easy |
+
+#### ICE Calculation Formula
+
+```
+ICE Score = Impact × Confidence × Ease
+```
+
+#### Agent Implementation
+
+```python
+def calculate_ice_score(feature: FeatureSpec, config: Config) -> float:
+    """
+    Calculate ICE score with agent-enhanced simplicity
+    """
+    # Convert normalized factors to 1-10 scale
+    impact = calculate_ice_impact(feature.revenue, feature.reach, feature.risk_reduction)
+    confidence = calculate_ice_confidence(feature.llm_analysis, feature.data_quality)
+    ease = calculate_ice_ease(feature.engineering, feature.complexity, feature.dependency)
+    
+    ice_score = impact * confidence * ease
+    
+    return ice_score
+
+def calculate_ice_impact(revenue: float, reach: float, risk: float) -> float:
+    """
+    Convert business factors to ICE impact (1-10 scale)
+    """
+    # Weighted combination of business value factors
+    combined_impact = (revenue * 0.5) + (reach * 0.3) + (risk * 0.2)
+    return 1 + (combined_impact * 9)  # Scale from 1-10
+
+def calculate_ice_ease(engineering: float, complexity: float, dependency: float) -> float:
+    """
+    Convert effort factors to ICE ease (1-10 scale, where higher = easier)
+    """
+    # Combined effort assessment (inverted for ease)
+    combined_effort = (engineering * 0.4) + (complexity * 0.35) + (dependency * 0.25)
+    ease = 1 - combined_effort  # Invert: high effort = low ease
+    return 1 + (ease * 9)  # Scale from 1-10
+```
+
+#### When to Use ICE
+- **Fast-paced environments** requiring quick decisions
+- **Early-stage companies** with limited data
+- **Cross-functional teams** needing simple communication
+- **Agile methodologies** emphasizing speed over precision
+
+#### ICE Advantages
+- ✅ **Simple**: Easy to understand and calculate
+- ✅ **Fast**: Quick assessment and scoring
+- ✅ **Intuitive**: Natural 1-10 scale interpretation
+- ✅ **Flexible**: Adaptable to various contexts
+
+#### ICE Limitations
+- ❌ **Less granular**: May miss nuanced trade-offs
+- ❌ **Subjective**: Relies heavily on intuition
+- ❌ **Scale-sensitive**: Multiplication can amplify biases
+
+---
+
+### Impact-Effort Matrix (Simple Prioritization)
+
+The **Impact-Effort Matrix** is a visual prioritization framework that plots features on a 2D grid to identify quick wins and strategic investments:
+
+#### Framework Quadrants
+
+```
+High Impact, Low Effort    |    High Impact, High Effort
+    "QUICK WINS"          |      "MAJOR PROJECTS"
+    (Do First)            |      (Do Second)
+--------------------------|---------------------------
+Low Impact, Low Effort    |    Low Impact, High Effort
+    "FILL-INS"           |       "THANKLESS TASKS"
+    (Do Later)           |       (Avoid)
+```
+
+#### Scoring Approach
+
+```python
+def calculate_impact_effort_score(feature: FeatureSpec, config: Config) -> Tuple[float, str]:
+    """
+    Calculate Impact-Effort positioning and quadrant classification
+    """
+    # Calculate impact score (0-1 scale)
+    impact = (
+        feature.revenue * 0.4 +
+        feature.reach * 0.3 +
+        feature.risk_reduction * 0.3
+    )
+    
+    # Calculate effort score (0-1 scale)
+    effort = (
+        feature.engineering * 0.4 +
+        feature.complexity * 0.35 +
+        feature.dependency * 0.25
+    )
+    
+    # Classify into quadrants
+    quadrant = classify_quadrant(impact, effort)
+    
+    # Priority score (impact/effort ratio)
+    priority_score = impact / max(effort, 0.1)
+    
+    return priority_score, quadrant
+
+def classify_quadrant(impact: float, effort: float) -> str:
+    """
+    Classify feature into Impact-Effort quadrant
+    """
+    high_impact = impact >= 0.6
+    low_effort = effort <= 0.4
+    
+    if high_impact and low_effort:
+        return "QUICK_WINS"
+    elif high_impact and not low_effort:
+        return "MAJOR_PROJECTS"
+    elif not high_impact and low_effort:
+        return "FILL_INS"
+    else:
+        return "THANKLESS_TASKS"
+```
+
+#### Quadrant-Based Prioritization
+
+```python
+def prioritize_by_quadrant(features: List[ScoredFeature]) -> List[ScoredFeature]:
+    """
+    Agent-based quadrant prioritization with smart ordering
+    """
+    quadrant_priority = {
+        "QUICK_WINS": 1,      # Highest priority
+        "MAJOR_PROJECTS": 2,  # Second priority
+        "FILL_INS": 3,        # Third priority
+        "THANKLESS_TASKS": 4  # Lowest priority
+    }
+    
+    # Sort by quadrant, then by score within quadrant
+    return sorted(features, key=lambda f: (
+        quadrant_priority[f.quadrant],
+        -f.score  # Higher scores first within quadrant
+    ))
+```
+
+#### When to Use Impact-Effort
+- **Visual teams** that benefit from spatial representation
+- **Resource planning** requiring clear effort assessment
+- **Portfolio balancing** across different effort levels
+- **Stakeholder communication** needing simple visualization
+
+#### Impact-Effort Advantages
+- ✅ **Visual clarity**: Easy to see trade-offs at a glance
+- ✅ **Strategic insight**: Identifies optimal feature types
+- ✅ **Communication-friendly**: Intuitive for stakeholders
+- ✅ **Action-oriented**: Clear guidance on what to do next
+
+#### Impact-Effort Limitations
+- ❌ **Binary thinking**: May oversimplify complex decisions
+- ❌ **Static view**: Doesn't capture changing priorities
+- ❌ **Context-light**: Limited business context consideration
+
+---
+
+### Agentic Metric Selection
+
+The system's agents can intelligently select the most appropriate scoring methodology based on context:
+
+```python
+def select_optimal_methodology(context: PrioritizationContext, config: Config) -> str:
+    """
+    Agent selects best scoring methodology based on organizational context
+    """
+    if context.team_size > 50 and context.data_maturity == "high":
+        return "RICE"  # Large, data-driven organizations
+    
+    elif context.decision_speed == "fast" and context.team_experience == "mixed":
+        return "ICE"   # Fast-moving teams needing simplicity
+    
+    elif context.visual_preference and context.portfolio_planning:
+        return "IMPACT_EFFORT"  # Strategic portfolio management
+    
+    else:
+        return config.default_methodology  # Fallback to configuration
+```
+
+### Hybrid Approach Implementation
+
+The agentic system can combine multiple methodologies for comprehensive analysis:
+
+```python
+def hybrid_scoring_analysis(feature: FeatureSpec, config: Config) -> Dict[str, Any]:
+    """
+    Agent provides multi-methodology analysis for comprehensive insight
+    """
+    return {
+        "rice_score": calculate_rice_score(feature, config),
+        "ice_score": calculate_ice_score(feature, config),
+        "impact_effort": calculate_impact_effort_score(feature, config),
+        "recommendation": select_primary_methodology(feature, config),
+        "confidence": calculate_cross_methodology_confidence(feature),
+        "rationale": generate_methodology_rationale(feature, config)
+    }
+```
+
+This multi-methodology approach ensures that teams can leverage the most appropriate framework for their specific context while maintaining consistency and transparency in their prioritization decisions.
 
 ---
 
