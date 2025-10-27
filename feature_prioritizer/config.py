@@ -6,7 +6,7 @@ Implements configurable prioritization strategies per LLD specification.
 from enum import Enum
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
-from models import ImpactWeights, EffortWeights
+from models import ImpactWeights, EffortWeights, MonitoringConfig
 
 class ScoringPolicy(str, Enum):
     """Available scoring policies for feature prioritization."""
@@ -39,6 +39,10 @@ class Config(BaseModel):
     default_engineering: float = Field(default=0.5, ge=0, le=1, description="Default engineering effort when hint missing")
     default_dependency: float = Field(default=0.5, ge=0, le=1, description="Default dependency complexity when hint missing")
     default_complexity: float = Field(default=0.5, ge=0, le=1, description="Default implementation complexity when hint missing")
+    
+
+    # Monitoring and observability configuration
+    monitoring: MonitoringConfig = Field(default_factory=lambda: MonitoringConfig(), description="Monitoring and observability settings")
     
     # Keyword heuristics for automatic inference
     keyword_mappings: Dict[str, Dict[str, float]] = Field(
@@ -153,3 +157,42 @@ class Config(BaseModel):
                     setattr(new_config.effort_weights, key, value)
         
         return new_config
+    
+
+    def get_monitoring_config(self) -> Dict[str, Any]:
+        """Get monitoring configuration parameters."""
+        return {
+            "enabled": self.monitoring.enabled,
+            "log_directory": self.monitoring.log_directory,
+            "audit_trail_enabled": self.monitoring.audit_trail_enabled,
+            "performance_metrics_enabled": self.monitoring.performance_metrics_enabled,
+            "alert_thresholds": self.monitoring.alert_thresholds.model_dump(),
+            "report_interval_minutes": self.monitoring.report_interval_minutes,
+            "retention_days": self.monitoring.retention_days
+        }
+    
+    @classmethod
+    def monitoring_enabled_config(cls, policy: ScoringPolicy = ScoringPolicy.RICE) -> 'Config':
+        """Get configuration with comprehensive monitoring enabled."""
+        monitoring_config = MonitoringConfig(
+            enabled=True,
+            audit_trail_enabled=True,
+            performance_metrics_enabled=True
+        )
+        return cls(prioritize_metric=policy, monitoring=monitoring_config)
+    
+    @classmethod
+    def production_config(cls, policy: ScoringPolicy = ScoringPolicy.RICE) -> 'Config':
+        """Get production-ready configuration with monitoring and LLM."""
+        monitoring_config = MonitoringConfig(
+            enabled=True,
+            audit_trail_enabled=True,
+            performance_metrics_enabled=True,
+            log_directory="logs/production"
+        )
+        return cls(
+            prioritize_metric=policy,
+            llm_enabled=True,
+            llm_model="gpt-4o-mini",
+            monitoring=monitoring_config
+        )
