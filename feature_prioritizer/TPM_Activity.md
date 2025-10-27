@@ -1,4 +1,4 @@
-# 🎯 **TPM Activity: Adding FeasibilityAgent for Risk Assessment**
+[# 🎯 **TPM Activity: Adding FeasibilityAgent for Risk Assessment**
 
 ## **What You're Adding**
 A new **FeasibilityAgent** that evaluates delivery risk and applies risk penalties to feature scores.
@@ -379,4 +379,4 @@ config.llm_model = "gpt-4o-mini"  # or "gpt-3.5-turbo" for faster analysis
   "delivery_confidence": "HighRisk", 
   "notes": ["Risk Assessment: High complexity AI feature requiring ML expertise, data pipeline setup, and model training infrastructure - significant unknowns in performance and accuracy"]
 }
-```
+```](https://github.com/nmansur0ct/Agents/blob/v2/feature_prioritizer/FEATURE_PRIORITY_ARCHITECTURE.md)
