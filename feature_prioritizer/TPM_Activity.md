@@ -1,11 +1,11 @@
-#  **TPM Activity: Adding FeasibilityAgent for Risk Assessment**
+# 🎯 **TPM Activity: Adding FeasibilityAgent for Risk Assessment**
 
-## ** Repository Setup**
+## **📦 Repository Setup**
 
 ### **Git Repository Information:**
 - **Repository URL:** `https://github.com/nmansur0ct/Agents.git`
 - **Branch:** `v2`
-
+- **Access Token:** `GIT_TOKEN`
 
 ### **Initial Checkout Commands:**
 ```bash
@@ -45,7 +45,36 @@ A new **FeasibilityAgent** that evaluates delivery risk and applies risk penalti
 
 ## **⚡ Quick Implementation Steps**
 
-### **Step 1: Add Risk Configuration**
+### **Step 1: Configure Environment Variables**
+**File:** Create `.env` in the `feature_prioritizer` folder
+
+**Action:** Create the environment file for LLM configuration:
+```bash
+# Navigate to feature_prioritizer directory
+cd feature_prioritizer
+
+# Create .env file
+touch .env
+```
+
+**Content for `.env` file:**
+```properties
+# This .env file contains environment variables for the feature prioritizer application.
+# It includes the OpenAI API key and other configuration settings for LLM integration.
+# OpenAI API Key
+OPENAI_API_AGENT_KEY=sk-proj-xxxxxx
+# LLM Configuration
+LLM_MODEL=gpt-3.5-turbo
+LLM_TEMPERATURE=0.3
+LLM_MAX_TOKENS=500
+LLM_TIMEOUT=30
+```
+
+**Note:** Replace `sk-proj-xxxxxx` with your actual OpenAI API key to enable LLM-enhanced risk analysis.
+
+---
+
+### **Step 2: Add Risk Configuration**
 **File:** `config.py`
 
 **Action:** Add after line 8 (after imports):
@@ -65,7 +94,7 @@ class RiskPolicy(BaseModel):
 
 ---
 
-### **Step 2: Add Risk Fields to Features**
+### **Step 3: Add Risk Fields to Features**
 **File:** `models.py`
 
 **Action:** Add to FeatureSpec class after the `notes` field:
@@ -97,7 +126,7 @@ feature_spec = FeatureSpec(
 
 ---
 
-### **Step 3: Create FeasibilityAgent with LLM**
+### **Step 4: Create FeasibilityAgent with LLM**
 **File:** Create `agents_feasibility.py`
 
 ```python
@@ -249,7 +278,7 @@ class FeasibilityAgent:
 
 ---
 
-### **Step 4: Add Feasibility Node**
+### **Step 5: Add Feasibility Node**
 **File:** `nodes.py`
 
 **Action 1:** Add import after line 17:
@@ -295,7 +324,7 @@ def _feasibility_node_impl(state: State, config: Optional[Config] = None) -> Sta
 
 ---
 
-### **Step 5: Apply Risk Penalty in Scorer**
+### **Step 6: Apply Risk Penalty in Scorer**
 **File:** `nodes.py`
 
 **Action:** In `scorer_node`, find where `ScoredFeature` is created and replace with:
@@ -320,7 +349,7 @@ def _feasibility_node_impl(state: State, config: Optional[Config] = None) -> Sta
 
 ---
 
-### **Step 6: Update Graph**
+### **Step 7: Update Graph**
 **File:** `graph.py`
 
 **Action 1:** Update import:
@@ -451,16 +480,25 @@ config.llm_model = "gpt-4o-mini"  # or "gpt-3.5-turbo" for faster analysis
 ## **🔧 Troubleshooting Common Issues**
 
 ### **Issue 1: "monitor_agent_execution is not defined"**
-**Solution:** Use the conditional monitoring pattern as shown in Step 4, not a decorator.
+**Solution:** Use the conditional monitoring pattern as shown in Step 5, not a decorator.
 
 ### **Issue 2: "Arguments missing for parameters feasibility, risk_factor, delivery_confidence"**
-**Solution:** Update the FeatureSpec constructor in `_extractor_node_impl` as shown in Step 2.
+**Solution:** Update the FeatureSpec constructor in `_extractor_node_impl` as shown in Step 3.
 
 ### **Issue 3: "cfg is not defined"**
 **Solution:** Use `config` instead of `cfg` in the scorer node risk penalty code.
 
 ### **Issue 4: Import errors for FeasibilityAgent**
-**Solution:** Make sure to create the `agents_feasibility.py` file exactly as shown in Step 3.
+**Solution:** Make sure to create the `agents_feasibility.py` file exactly as shown in Step 4.
+
+### **Issue 5: LLM functionality not working**
+**Solution:** Ensure the `.env` file is created in the feature_prioritizer directory with a valid OpenAI API key as shown in Step 1.
+
+### **Issue 6: "No OpenAI API key found" error**
+**Solution:** Check that:
+- `.env` file exists in the feature_prioritizer directory
+- `OPENAI_API_AGENT_KEY` is set with a valid API key (starts with `sk-proj-` or `sk-`)
+- The API key has sufficient credits and permissions
 
 ### **Quick Verification:**
 ```bash
