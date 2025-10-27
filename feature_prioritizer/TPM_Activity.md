@@ -1,339 +1,292 @@
-# 🎯 **TPM Activity: Adding Feasibility & Risk Validation Agent**
+#  **TPM Activity: Adding FeasibilityAgent for Risk Assessment**
 
-## **Overview: What You're Adding**
-You're enhancing your agentic feature prioritization system with a new **FeasibilityAgent** that:
-- Evaluates implementation feasibility (Low/Medium/High)
-- Computes risk factors (0-1 scale) 
-- Adds delivery confidence tags (Safe/MediumRisk/HighRisk)
-- Integrates seamlessly into your existing LangGraph orchestration
-- Applies risk penalties to final scoring
+## ** Repository Setup**
 
-## **📊 Architecture Enhancement**
+### **Git Repository Information:**
+- **Repository URL:** `https://github.com/nmansur0ct/Agents.git`
+- **Branch:** `v2`
 
-### **Before (3 Agents):**
+
+### **Initial Checkout Commands:**
+```bash
+# Clone the repository
+git clone https://github.com/nmansur0ct/Agents.git
+cd Agents
+
+# Switch to v2 branch (contains latest features)
+git checkout v2
+
+# Navigate to feature prioritizer directory
+cd feature_prioritizer
+
+# Verify you have the latest code
+git pull origin v2
 ```
-START → ExtractorAgent → ScorerAgent → PrioritizerAgent → END
-```
 
-### **After (4 Agents):**
-```
-START → ExtractorAgent → FeasibilityAgent → ScorerAgent → PrioritizerAgent → END
-        ↓                ↓                  ↓             ↓
-    Normalize         Assess Risk        Apply Risk      Final Priority
-    Features          & Feasibility      Penalty         with Rationale
+### **Working with Authentication:**
+```bash
+# Option 1: Use token in URL (for one-time operations)
+git clone https://GIT_TOKEN@github.com/nmansur0ct/Agents.git
+
+# Option 2: Set up authenticated remote (recommended)
+git remote add github-auth https://GIT_TOKEN@github.com/nmansur0ct/Agents.git
+git push github-auth v2  # Push changes using token
 ```
 
 ---
 
-## **📋 STEP-BY-STEP IMPLEMENTATION**
+## **What You're Adding**
+A new **FeasibilityAgent** that evaluates delivery risk and applies risk penalties to feature scores.
 
-### **STEP 1: Update Configuration (config.py)**
+**Before:** 3 agents (Extract → Score → Prioritize)  
+**After:** 4 agents (Extract → **Feasibility** → Score → Prioritize)
 
-**Location:** `/Users/n0m08hp/Agents/feature_prioritizer/config.py`
+---
 
-**What to Add:** New RiskPolicy configuration class
+## **⚡ Quick Implementation Steps**
 
-**Where to Insert:** After line 9 (after the imports), before the `ScoringPolicy` enum
+### **Step 1: Add Risk Configuration**
+**File:** `config.py`
 
-**Code to Add:**
+**Action:** Add after line 8 (after imports):
 ```python
 class RiskPolicy(BaseModel):
     """Risk assessment configuration for feasibility validation."""
-    risk_penalty: float = Field(default=0.5, ge=0, le=1, description="Risk penalty multiplier (0=no penalty, 1=full penalty)")
-    enable_feasibility_agent: bool = Field(default=True, description="Enable feasibility and risk validation agent")
+    risk_penalty: float = Field(default=0.5, ge=0, le=1, description="Risk penalty multiplier")
+    enable_feasibility_agent: bool = Field(default=True, description="Enable feasibility agent")
+    use_llm_analysis: bool = Field(default=True, description="Use LLM for risk analysis")
 ```
 
-**Next:** Find the `Config` class definition around line 20
-
-**Where to Insert:** After the `effort_weights` field (around line 26)
-
-**Code to Add:**
+**Then:** Add to Config class after the monitoring field:
 ```python
-    # Risk assessment configuration  
-    risk: RiskPolicy = Field(default_factory=lambda: RiskPolicy(), description="Risk assessment and penalty configuration")
+    # Risk assessment configuration
+    risk: RiskPolicy = Field(default_factory=lambda: RiskPolicy(), description="Risk assessment configuration")
 ```
 
 ---
 
-### **STEP 2: Extend Data Models (models.py)**
+### **Step 2: Add Risk Fields to Features**
+**File:** `models.py`
 
-**Location:** `/Users/n0m08hp/Agents/feature_prioritizer/models.py`
-
-**What to Update:** Add risk fields to FeatureSpec
-
-**Where to Modify:** Find the `FeatureSpec` class around line 19
-
-**Fields to Add:** After the `notes` field (around line 27), add these three new fields:
-
+**Action:** Add to FeatureSpec class after the `notes` field:
 ```python
-    # Feasibility and risk assessment fields (populated by FeasibilityAgent)
+    # Risk assessment fields
     feasibility: Optional[str] = Field(None, description="Implementation feasibility: Low|Medium|High")
-    risk_factor: Optional[float] = Field(0.4, ge=0, le=1, description="Delivery risk factor (0=safe, 1=very risky)")
-    delivery_confidence: Optional[str] = Field(None, description="Delivery confidence: Safe|MediumRisk|HighRisk")
+    risk_factor: Optional[float] = Field(0.4, ge=0, le=1, description="Risk factor (0=safe, 1=risky)")
+    delivery_confidence: Optional[str] = Field(None, description="Confidence: Safe|MediumRisk|HighRisk")
 ```
 
-**Additional Import:** At the top of the file (around line 6), add `confloat` to the import:
+**Note:** You'll also need to update the FeatureSpec constructor in `_extractor_node_impl` to include these fields:
 ```python
-from pydantic import BaseModel, Field, validator, confloat
+# In nodes.py, update FeatureSpec constructor:
+feature_spec = FeatureSpec(
+    name=raw_feature.name,
+    reach=_norm_hint(raw_feature.reach_hint, defaults['reach']),
+    revenue=_norm_hint(raw_feature.revenue_hint, defaults['revenue']),
+    risk_reduction=_norm_hint(raw_feature.risk_reduction_hint, defaults['risk_reduction']),
+    engineering=_norm_hint(raw_feature.engineering_hint, defaults['engineering']),
+    dependency=_norm_hint(raw_feature.dependency_hint, defaults['dependency']),
+    complexity=_norm_hint(raw_feature.complexity_hint, defaults['complexity']),
+    notes=final_notes,
+    # Risk assessment fields (will be populated by FeasibilityAgent)
+    feasibility=None,
+    risk_factor=0.4,  # Default risk factor
+    delivery_confidence=None
+)
 ```
 
 ---
 
-### **STEP 3: Create Feasibility Agent (New File)**
+### **Step 3: Create FeasibilityAgent with LLM**
+**File:** Create `agents_feasibility.py`
 
-**Location:** Create new file `/Users/n0m08hp/Agents/feature_prioritizer/agents_feasibility.py`
-
-**Complete File Content:**
 ```python
 """
-Feasibility Agent Module - Risk and Delivery Confidence Assessment
-Implements LLM-enhanced feasibility analysis with deterministic fallback.
-"""
 
-from __future__ import annotations
-from typing import List
+FeasibilityAgent - AI-Enhanced Risk Assessment Module
+"""
+from typing import List, Dict, Any, Optional
 from config import Config
 from models import FeatureSpec
 from llm_utils import call_openai_json
+from monitoring import get_system_monitor
 
 class FeasibilityAgent:
-    """
-    Agent for assessing feature implementation feasibility and delivery risk.
-    Uses LLM analysis with deterministic fallback logic.
-    """
-    
-    LLM_PROMPT = (
-        "You are an agent for feature feasibility and delivery risk assessment. Your role is to analyze "
-        "implementation complexity and estimate delivery confidence.\n\n"
-        "Analyze this feature and return STRICT JSON format:\n"
-        "{{\n"
-        "  \"feasibility\": \"Low|Medium|High\",\n"
-        "  \"risk_factor\": 0.0-1.0,\n"
-        "  \"delivery_confidence\": \"Safe|MediumRisk|HighRisk\"\n"
-        "}}\n\n"
-        "Feature: {feature_name}\n"
-        "Description: {feature_desc}\n"
-        "Notes: {feature_notes}\n\n"
-        "Assessment Guidelines:\n"
-        "- Higher dependency/integration/refactor/migration → higher risk_factor\n"
-        "- UI-only/analytics/dashboard features → lower risk_factor\n"
-        "- Consider technical complexity, team dependencies, and delivery timeline\n"
-        "- Be conservative and evidence-based in your assessment"
-    )
-
     def __init__(self, config: Config):
-        """Initialize with configuration."""
         self.config = config
-
-    @staticmethod
-    def _fallback_assessment(spec: FeatureSpec) -> FeatureSpec:
+        self.monitor = get_system_monitor() if config.monitoring.enabled else None
+    
+    def _analyze_with_llm(self, spec: FeatureSpec) -> Dict[str, Any]:
+        """Use LLM to analyze feasibility and risk factors."""
+        if not self.config.llm_enabled or not self.config.risk.use_llm_analysis:
+            return self._analyze_deterministic(spec)
+        
+        prompt = f"""
+        Analyze the implementation feasibility and delivery risk for this feature:
+        
+        Feature Name: {spec.name}
+        Engineering Effort: {spec.engineering:.2f} (0=low, 1=high)
+        Dependency Complexity: {spec.dependency:.2f} (0=low, 1=high)
+        Implementation Complexity: {spec.complexity:.2f} (0=low, 1=high)
+        Notes: {' | '.join(spec.notes)}
+        
+        Assess:
+        1. Implementation feasibility (Low/Medium/High)
+        2. Risk factor (0.0-1.0, where 0=safe, 1=very risky)  
+        3. Delivery confidence (Safe/MediumRisk/HighRisk)
+        
+        Consider: technical complexity, external dependencies, unknowns, potential blockers.
         """
-        Deterministic fallback logic for risk assessment when LLM is disabled.
-        Uses keyword heuristics and complexity analysis.
-        """
-        # Combine all available text for analysis
-        text_content = " ".join([spec.name] + spec.notes).lower()
         
-        # Default values
-        risk_factor = 0.4
-        delivery_confidence = "MediumRisk"
-        feasibility = "Medium"
+        schema = {
+            "type": "object",
+            "properties": {
+                "feasibility": {"type": "string", "enum": ["Low", "Medium", "High"]},
+                "risk_factor": {"type": "number", "minimum": 0, "maximum": 1},
+                "delivery_confidence": {"type": "string", "enum": ["Safe", "MediumRisk", "HighRisk"]},
+                "reasoning": {"type": "string"}
+            },
+            "required": ["feasibility", "risk_factor", "delivery_confidence", "reasoning"]
+        }
         
-        # High-risk keywords (major refactoring, migrations, integrations)
-        high_risk_keywords = [
-            "refactor", "rewrite", "migrate", "overhaul", "legacy", "architecture",
-            "platform", "integration", "third-party", "api", "microservice", "database"
-        ]
+        try:
+            result = call_openai_json(
+                prompt=prompt,
+                schema=schema,
+                model=self.config.llm_model,
+                max_tokens=300,
+                temperature=0.3
+            )
+            
+            # Log LLM usage
+            if self.monitor:
+                self.monitor.audit_trail.log_event(
+                    agent_name="feasibility_agent",
+                    event_type="llm_analysis", 
+                    details={"feature": spec.name, "reasoning": result.get("reasoning", "")[:100]}
+                )
+            
+            return result
+            
+        except Exception as e:
+            # Fallback to deterministic analysis
+            if self.monitor:
+                self.monitor.audit_trail.log_event(
+                    agent_name="feasibility_agent",
+                    event_type="llm_fallback",
+                    details={"feature": spec.name, "error": str(e)}
+                )
+            return self._analyze_deterministic(spec)
+    
+    def _analyze_deterministic(self, spec: FeatureSpec) -> Dict[str, Any]:
+        """Deterministic analysis using keywords and complexity scores."""
+        text = f"{spec.name} {' '.join(spec.notes)}".lower()
         
-        # Medium-risk keywords (dependencies, complexity)
-        medium_risk_keywords = [
-            "depends on", "platform team", "external", "complex", "algorithm",
-            "security", "performance", "scalability", "framework"
-        ]
+        # Risk keyword analysis
+        high_risk = ["migration", "refactor", "architecture", "microservice", "ai", "algorithm", "blockchain", "real-time"]
+        medium_risk = ["integration", "api", "external", "security", "performance", "scalability", "framework"]
+        low_risk = ["ui", "dashboard", "report", "button", "form", "display", "styling", "cosmetic"]
         
-        # Low-risk keywords (UI, simple features)
-        low_risk_keywords = [
-            "ui", "notification", "analytics", "dashboard", "report", "display",
-            "button", "form", "styling", "cosmetic", "configuration"
-        ]
+        high_count = sum(1 for word in high_risk if word in text)
+        medium_count = sum(1 for word in medium_risk if word in text)
+        low_count = sum(1 for word in low_risk if word in text)
         
-        # Analyze keyword presence
-        high_risk_count = sum(1 for keyword in high_risk_keywords if keyword in text_content)
-        medium_risk_count = sum(1 for keyword in medium_risk_keywords if keyword in text_content)
-        low_risk_count = sum(1 for keyword in low_risk_keywords if keyword in text_content)
+        complexity = (spec.complexity + spec.engineering + spec.dependency) / 3
         
-        # Factor in complexity and engineering effort scores
-        complexity_risk = (spec.complexity + spec.engineering + spec.dependency) / 3
+        # Determine risk level
+        if high_count > 0 or complexity > 0.7:
+            risk_factor = min(0.8, 0.6 + complexity * 0.2)
+            return {"feasibility": "Low", "risk_factor": risk_factor, "delivery_confidence": "HighRisk", "reasoning": f"High complexity ({complexity:.2f}) or high-risk keywords detected"}
+        elif medium_count > 0 or complexity > 0.5:
+            risk_factor = min(0.6, 0.4 + complexity * 0.2)
+            return {"feasibility": "Medium", "risk_factor": risk_factor, "delivery_confidence": "MediumRisk", "reasoning": f"Medium complexity ({complexity:.2f}) or medium-risk indicators"}
+        else:
+            risk_factor = max(0.2, complexity)
+            return {"feasibility": "High", "risk_factor": risk_factor, "delivery_confidence": "Safe", "reasoning": f"Low complexity ({complexity:.2f}) and safe implementation pattern"}
+    
+    def assess_feature(self, spec: FeatureSpec) -> FeatureSpec:
+        """Assess risk for a single feature using LLM or deterministic method."""
+        analysis = self._analyze_with_llm(spec)
         
-        # Determine risk level based on keywords and complexity
-        if high_risk_count > 0 or complexity_risk > 0.7:
-            risk_factor = min(0.8, 0.6 + complexity_risk * 0.2)
-            delivery_confidence = "HighRisk"
-            feasibility = "Low"
-        elif medium_risk_count > 0 or complexity_risk > 0.5:
-            risk_factor = min(0.6, 0.4 + complexity_risk * 0.2)
-            delivery_confidence = "MediumRisk" 
-            feasibility = "Medium"
-        elif low_risk_count > 0 or complexity_risk < 0.3:
-            risk_factor = max(0.2, complexity_risk)
-            delivery_confidence = "Safe"
-            feasibility = "High"
+        spec.feasibility = analysis["feasibility"]
+        spec.risk_factor = analysis["risk_factor"] 
+        spec.delivery_confidence = analysis["delivery_confidence"]
         
-        # Update the feature spec
-        spec.risk_factor = risk_factor
-        spec.delivery_confidence = delivery_confidence
-        spec.feasibility = feasibility
+        # Add reasoning to notes
+        if "reasoning" in analysis:
+            spec.notes.append(f"Risk Assessment: {analysis['reasoning']}")
         
         return spec
-
+    
     def enrich(self, specs: List[FeatureSpec], errors: List[str]) -> List[FeatureSpec]:
-        """
-        Enrich feature specs with feasibility and risk assessment.
-        
-        Args:
-            specs: List of feature specifications to analyze
-            errors: List to append any errors encountered
-            
-        Returns:
-            List of enriched feature specifications with risk data
-        """
+        """Enrich all features with AI-enhanced risk assessment."""
         if not self.config.risk.enable_feasibility_agent:
             return specs
-            
-        enriched_specs = []
         
+        enriched_specs = []
         for spec in specs:
             try:
-                # Try LLM analysis first if enabled
-                if self.config.llm_enabled:
-                    feature_desc = f"{spec.name}: " + " ".join(spec.notes[:3])  # Limit context
-                    
-                    llm_response, llm_error = call_openai_json(
-                        prompt=self.LLM_PROMPT.format(
-                            feature_name=spec.name,
-                            feature_desc=feature_desc,
-                            feature_notes="; ".join(spec.notes[:2])
-                        ),
-                        model=self.config.llm_model,
-                        api_key_env=self.config.llm_api_key_env,
-                        temperature=0.1,
-                        max_tokens=200,
-                        timeout=self.config.llm_timeout
+                enriched_spec = self.assess_feature(spec)
+                enriched_specs.append(enriched_spec)
+                
+                if self.monitor:
+                    self.monitor.audit_trail.log_event(
+                        agent_name="feasibility_agent",
+                        event_type="feature_assessed",
+                        details={
+                            "feature": spec.name,
+                            "feasibility": spec.feasibility,
+                            "risk_factor": spec.risk_factor,
+                            "confidence": spec.delivery_confidence
+                        }
                     )
-                    
-                    if not llm_error and isinstance(llm_response, dict):
-                        # Validate and extract LLM response
-                        if all(key in llm_response for key in ["feasibility", "risk_factor", "delivery_confidence"]):
-                            # Normalize and validate risk_factor
-                            risk_factor = float(llm_response["risk_factor"])
-                            risk_factor = max(0.0, min(1.0, risk_factor))  # Clamp to [0,1]
-                            
-                            spec.feasibility = str(llm_response["feasibility"])
-                            spec.risk_factor = risk_factor
-                            spec.delivery_confidence = str(llm_response["delivery_confidence"])
-                            
-                            enriched_specs.append(spec)
-                            continue
-                    
-                    if llm_error:
-                        errors.append(f"feasibility_llm_error:{spec.name}:{llm_error}")
-                
-                # Fallback to deterministic assessment
-                enriched_specs.append(self._fallback_assessment(spec))
-                
             except Exception as e:
-                errors.append(f"feasibility_error:{spec.name}:{str(e)}")
-                # Use fallback for this feature
-                enriched_specs.append(self._fallback_assessment(spec))
+                errors.append(f"feasibility_agent_error:{spec.name}:{str(e)}")
+                enriched_specs.append(spec)
         
         return enriched_specs
 ```
 
 ---
 
-### **STEP 4: Update Graph Orchestration (graph.py)**
+### **Step 4: Add Feasibility Node**
+**File:** `nodes.py`
 
-**Location:** `/Users/n0m08hp/Agents/feature_prioritizer/graph.py`
-
-**Import Addition:** After line 8 (after the existing imports), add:
+**Action 1:** Add import after line 17:
 ```python
 from agents_feasibility import FeasibilityAgent
 ```
 
-**Node Addition:** Find the `_build_graph` method around line 20
-
-**Where to Modify:** After the existing wrapper functions (around line 30), add:
-```python
-        def feasibility_with_config(state: State) -> State:
-            return feasibility_node(state, self.config)
-```
-
-**Graph Construction:** Find where nodes are added (around line 35), modify to:
-```python
-        # Add nodes with config-aware wrappers
-        workflow.add_node("extract", extractor_with_config)
-        workflow.add_node("feasibility", feasibility_with_config)  # NEW
-        workflow.add_node("score", scorer_with_config)
-        workflow.add_node("prioritize", prioritizer_with_config)
-```
-
-**Edge Updates:** Find the edge definitions (around line 42), modify to:
-```python
-        # Define the flow: START -> extract -> feasibility -> score -> prioritize -> END
-        workflow.set_entry_point("extract")
-        workflow.add_edge("extract", "feasibility")     # NEW
-        workflow.add_edge("feasibility", "score")       # NEW  
-        workflow.add_edge("score", "prioritize")
-        workflow.add_edge("prioritize", END)
-```
-
----
-
-### **STEP 5: Implement Feasibility Node (nodes.py)**
-
-**Location:** `/Users/n0m08hp/Agents/feature_prioritizer/nodes.py`
-
-**Import Addition:** Add after the existing imports (around line 12):
-```python
-from agents_feasibility import FeasibilityAgent
-```
-
-**New Function:** Add this function after the `extractor_node` function (around line 240):
+**Action 2:** Add function after `extractor_node`:
 ```python
 def feasibility_node(state: State, config: Optional[Config] = None) -> State:
     """
-    Feasibility Agent Node - Assesses implementation risk and delivery confidence.
-    Enriches feature specs with feasibility data for downstream scoring.
-    
-    Args:
-        state: Current graph state with extracted features
-        config: Configuration with risk assessment settings
-        
-    Returns:
-        Updated state with feasibility-enriched features
+    Agent 2: Feasibility Agent
+    Assesses implementation risk and delivery confidence for features.
     """
+    
+    # Apply monitoring if enabled
+    if config and config.monitoring.enabled:
+        monitor = get_system_monitor()
+        decorator = monitor.get_monitoring_decorator("feasibility_agent", "assess_risk")
+        return decorator(_feasibility_node_impl)(state, config)
+    else:
+        return _feasibility_node_impl(state, config)
+
+def _feasibility_node_impl(state: State, config: Optional[Config] = None) -> State:
+    """Implementation of feasibility node with monitoring support."""
     cfg = config or Config.default()
     
-    # Initialize errors list if not present
     if "errors" not in state:
         state["errors"] = []
     
-    # Get extracted features
     extracted_output = state.get("extracted")
     if not extracted_output or not hasattr(extracted_output, 'features'):
         state["errors"].append("feasibility_node:no_extracted_features")
         return state
     
-    # Initialize feasibility agent
     feasibility_agent = FeasibilityAgent(cfg)
-    
-    # Enrich features with risk assessment
-    enriched_features = feasibility_agent.enrich(
-        specs=extracted_output.features,
-        errors=state["errors"]
-    )
-    
-    # Update the extracted output with enriched features
+    enriched_features = feasibility_agent.enrich(extracted_output.features, state["errors"])
     extracted_output.features = enriched_features
     state["extracted"] = extracted_output
     
@@ -342,271 +295,189 @@ def feasibility_node(state: State, config: Optional[Config] = None) -> State:
 
 ---
 
-### **STEP 6: Apply Risk Penalty in Scorer (nodes.py)**
+### **Step 5: Apply Risk Penalty in Scorer**
+**File:** `nodes.py`
 
-**Location:** `/Users/n0m08hp/Agents/feature_prioritizer/nodes.py`
-
-**Where to Modify:** Find the `scorer_node` function (around line 290)
-
-**What to Change:** Find the scoring calculation section where final scores are computed
-
-**Locate:** The section that looks like this (around line 350-380):
+**Action:** In `scorer_node`, find where `ScoredFeature` is created and replace with:
 ```python
-        scored_features.append(ScoredFeature(
-            name=feature.name,
-            impact=impact,
-            effort=effort,
-            score=score,
-            rationale=rationale
-        ))
-```
-
-**Replace the score assignment with risk-adjusted scoring:**
-
-**Before the `ScoredFeature` creation, add this risk adjustment logic:**
-```python
-        # Apply risk penalty if feasibility data is available
+        # Apply risk penalty if available
         final_score = score
+        risk_note = ""
+        
         if hasattr(feature, 'risk_factor') and feature.risk_factor is not None:
-            risk_penalty = cfg.risk.risk_penalty
-            risk_multiplier = 1 - (risk_penalty * feature.risk_factor)
+            risk_multiplier = 1 - (config.risk.risk_penalty * feature.risk_factor)
             final_score = score * risk_multiplier
-            
-            # Update rationale to include risk adjustment
-            if feature.delivery_confidence:
-                rationale += f" | Risk-adjusted ({feature.delivery_confidence}, factor: {feature.risk_factor:.2f})"
+            risk_note = f" | Risk-adjusted ({feature.delivery_confidence})"
         
         scored_features.append(ScoredFeature(
             name=feature.name,
             impact=impact,
-            effort=effort,
-            score=final_score,  # Use risk-adjusted score
-            rationale=rationale
+            effort=effort, 
+            score=final_score,
+            rationale=rationale + risk_note
         ))
 ```
 
 ---
 
-### **STEP 7: Update CLI and Testing**
+### **Step 6: Update Graph**
+**File:** `graph.py`
 
-**Location:** `/Users/n0m08hp/Agents/feature_prioritizer/run.py`
-
-**No changes needed** - the existing CLI will automatically pick up the new agent through the graph orchestration.
-
-**For Testing:** Add a `--risk-penalty` parameter if desired:
-
-Find the argument parser section and add:
+**Action 1:** Update import:
 ```python
-parser.add_argument('--risk-penalty', type=float, default=0.5, 
-                   help='Risk penalty multiplier (0-1, default: 0.5)')
+from nodes import extractor_node, feasibility_node, scorer_node, prioritizer_node
 ```
 
-Then in the config creation section:
+**Action 2:** Add to `_build_graph` method:
 ```python
-# Update risk configuration if provided
-if args.risk_penalty is not None:
-    config.risk.risk_penalty = args.risk_penalty
+        # Add feasibility wrapper
+        def feasibility_with_config(state: State) -> State:
+            return feasibility_node(state, self.config)
+        
+        # Add all nodes
+        workflow.add_node("extract", extractor_with_config)
+        workflow.add_node("feasibility", feasibility_with_config)  # NEW
+        workflow.add_node("score", scorer_with_config)
+        workflow.add_node("prioritize", prioritizer_with_config)
+        
+        # Update flow
+        workflow.set_entry_point("extract")
+        workflow.add_edge("extract", "feasibility")     # NEW
+        workflow.add_edge("feasibility", "score")       # NEW
+        workflow.add_edge("score", "prioritize")
+        workflow.add_edge("prioritize", END)
 ```
 
 ---
 
-## **🚀 TESTING YOUR IMPLEMENTATION**
+## **🧪 Test Your Implementation**
 
-### **Step 1: Test with Existing Data**
 ```bash
+# Test basic functionality with monitoring
+python run.py --file samples/features.json --monitoring --performance-report
+
+# Test with LLM-enhanced risk analysis (requires API key)
+python run.py --file samples/features.json --llm --monitoring --performance-report
+
+# Test deterministic mode only (no LLM)
+python run.py --file samples/features.json --monitoring
+
+# Test with detailed output to see risk adjustments
+python run.py --file samples/features.json --llm --detailed --monitoring
+
+# Save monitoring report to see LLM usage
+python run.py --file samples/features.json --llm --monitoring --save-monitoring-report feasibility_llm_test.json
+
+# Expected output shows feasibility_agent with LLM usage
+# 🤖 extractor_agent: ✅ Success Rate: 100.0%
+# 🤖 feasibility_agent: ✅ Success Rate: 100.0%  ← NEW AGENT WITH LLM
+# 🤖 scorer_agent: ✅ Success Rate: 100.0%
+# 🤖 prioritizer_agent: ✅ Success Rate: 100.0%
+#
+# 📝 AUDIT EVENTS: 8
+# ├─ llm_analysis: 3 events (LLM risk assessments)
+# ├─ feature_assessed: 3 events
+# └─ agent_execution: 4 events
+```
+
+### **📊 Test with Different Industry Datasets**
+
+The repository includes multiple sample datasets for comprehensive testing:
+
+```bash
+# Healthcare features (high compliance requirements)
+python run.py --file samples/healthcare_features.csv --llm --monitoring
+
+# FinTech features (security and fraud focus)  
+python run.py --file samples/fintech_features.csv --llm --monitoring
+
+# Manufacturing features (high complexity AI systems)
+python run.py --file samples/manufacturing_features.csv --llm --monitoring
+
+# Smart City features (large scale IoT systems)
+python run.py --file samples/smart_city_features.csv --llm --monitoring
+
+# EdTech features (education technology)
+python run.py --file samples/edtech_features.csv --llm --monitoring
+
+# HR features (workforce management)
+python run.py --file samples/hr_features.csv --llm --monitoring
+```
+
+These datasets provide different risk profiles and complexity patterns to thoroughly test the FeasibilityAgent's risk assessment capabilities.
+
+---
+
+## **⚙️ Configuration Options**
+
+```python
+# Risk Assessment Settings
+config.risk.risk_penalty = 0.3  # Light penalty (30%)
+config.risk.risk_penalty = 0.7  # Heavy penalty (70%)
+
+# Agent Control
+config.risk.enable_feasibility_agent = False  # Disable agent entirely
+
+# LLM vs Deterministic Analysis
+config.risk.use_llm_analysis = True   # Use LLM for enhanced analysis
+config.risk.use_llm_analysis = False  # Use only deterministic keywords
+
+# LLM Configuration (when enabled)
+config.llm_enabled = True
+config.llm_model = "gpt-4o-mini"  # or "gpt-3.5-turbo" for faster analysis
+```
+
+### **LLM vs Deterministic Comparison:**
+
+| Mode | Speed | Accuracy | Cost | Use Case |
+|------|-------|----------|------|----------|
+| **LLM** | Slower | Higher | $$ | Complex features, nuanced analysis |
+| **Deterministic** | Faster | Good | Free | Simple features, batch processing |
+
+### **LLM Analysis Benefits:**
+- ✅ Contextual understanding of feature descriptions
+- ✅ Nuanced risk assessment based on implementation details  
+- ✅ Learns from complex technical patterns
+- ✅ Provides detailed reasoning in audit logs
+
+### **Deterministic Analysis Benefits:**
+- ✅ Instant results, no API calls
+- ✅ Consistent, predictable outputs
+- ✅ No external dependencies
+- ✅ Perfect for CI/CD pipelines
+
+---
+
+## **🔧 Troubleshooting Common Issues**
+
+### **Issue 1: "monitor_agent_execution is not defined"**
+**Solution:** Use the conditional monitoring pattern as shown in Step 4, not a decorator.
+
+### **Issue 2: "Arguments missing for parameters feasibility, risk_factor, delivery_confidence"**
+**Solution:** Update the FeatureSpec constructor in `_extractor_node_impl` as shown in Step 2.
+
+### **Issue 3: "cfg is not defined"**
+**Solution:** Use `config` instead of `cfg` in the scorer node risk penalty code.
+
+### **Issue 4: Import errors for FeasibilityAgent**
+**Solution:** Make sure to create the `agents_feasibility.py` file exactly as shown in Step 3.
+
+### **Quick Verification:**
+```bash
+# Test imports work correctly
 cd /Users/n0m08hp/Agents/feature_prioritizer
-python run.py --file samples/features.json --auto-save --verbose
-```
-
-### **Step 2: Check Risk Assessment Output**
-Look for new fields in the output:
-- `feasibility`: "Low|Medium|High"  
-- `risk_factor`: 0.0-1.0
-- `delivery_confidence`: "Safe|MediumRisk|HighRisk"
-
-### **Step 3: Test Risk Penalty**
-```bash
-python run.py --file samples/features.json --risk-penalty 0.8 --auto-save
-```
-
-### **Step 4: Enable LLM for Enhanced Risk Analysis**
-```bash
-export OPENAI_API_KEY="your-key"
-python run.py --file samples/features.json --llm --auto-save
+python -c "from config import Config; from models import FeatureSpec; from nodes import feasibility_node; print('✅ All imports successful')"
 ```
 
 ---
 
-## **📊 EXAMPLE OUTPUT ENHANCEMENT**
-
-### **Before (without Feasibility Agent):**
+### **Sample LLM Output:**
 ```json
 {
-  "name": "Mobile Payment Integration",
-  "impact": 0.85,
-  "effort": 0.6,
-  "score": 1.42,
-  "rationale": "High revenue potential with moderate engineering effort"
+  "name": "AI-Powered Recommendations",
+  "feasibility": "Low",
+  "risk_factor": 0.75,
+  "delivery_confidence": "HighRisk", 
+  "notes": ["Risk Assessment: High complexity AI feature requiring ML expertise, data pipeline setup, and model training infrastructure - significant unknowns in performance and accuracy"]
 }
 ```
-
-### **After (with Feasibility Agent):**
-```json
-{
-  "name": "Mobile Payment Integration", 
-  "impact": 0.85,
-  "effort": 0.6,
-  "score": 1.13,
-  "rationale": "High revenue potential with moderate engineering effort | Risk-adjusted (MediumRisk, factor: 0.40)",
-  "feasibility": "Medium",
-  "risk_factor": 0.4,
-  "delivery_confidence": "MediumRisk"
-}
-```
-
----
-
-## **⚙️ CONFIGURATION OPTIONS FOR TPMs**
-
-TPMs can now adjust risk sensitivity without code changes:
-
-### **Conservative Risk Assessment (High Penalty)**
-```python
-config.risk.risk_penalty = 0.8  # 80% penalty for risky features
-```
-- **Use Case**: Mission-critical systems, regulated environments
-- **Effect**: Heavily penalizes high-risk features in prioritization
-
-### **Balanced Risk Assessment (Default)**
-```python
-config.risk.risk_penalty = 0.5  # 50% penalty for risky features  
-```
-- **Use Case**: Standard product development
-- **Effect**: Moderate risk consideration in scoring
-
-### **Aggressive Risk Tolerance (Low Penalty)**
-```python
-config.risk.risk_penalty = 0.2  # 20% penalty for risky features
-```
-- **Use Case**: Startups, rapid prototyping, innovation projects
-- **Effect**: Minimal risk penalty, favors high-impact features
-
-### **Disable Feasibility Agent**
-```python
-config.risk.enable_feasibility_agent = False
-```
-- **Use Case**: Simple prioritization, legacy workflows
-- **Effect**: Skips risk assessment entirely
-
----
-
-## **💡 BUSINESS VALUE FOR TPMs**
-
-### **1. Risk-Aware Prioritization**
-- **Challenge**: Features with high scores but delivery risks
-- **Solution**: Automatic risk penalty reduces score of risky features
-- **Benefit**: More realistic prioritization aligned with delivery capacity
-
-### **2. Delivery Confidence Metrics**
-- **Challenge**: Uncertainty around feature delivery timelines
-- **Solution**: Clear confidence tags (Safe/MediumRisk/HighRisk)
-- **Benefit**: Better planning and stakeholder communication
-
-### **3. Feasibility Intelligence**
-- **Challenge**: Technical complexity assessment requires deep expertise
-- **Solution**: AI-powered feasibility analysis with expert fallback
-- **Benefit**: Consistent technical assessment across all features
-
-### **4. Configurable Risk Policy**
-- **Challenge**: Different contexts require different risk tolerances
-- **Solution**: TPM-configurable risk penalty without code changes
-- **Benefit**: Adaptable to organizational risk appetite
-
----
-
-## **🔧 TECHNICAL BENEFITS**
-
-### **1. Enhanced Agent Pipeline**
-- Maintains existing 3-agent benefits
-- Adds specialized risk assessment capability
-- Zero disruption to current workflows
-
-### **2. Dual Intelligence Mode**
-- **LLM Mode**: Sophisticated risk analysis with business context
-- **Fallback Mode**: Reliable keyword-based heuristics
-- **Hybrid**: Best of both worlds with graceful degradation
-
-### **3. Rich Output Enhancement**
-- All existing fields preserved
-- New risk dimensions added
-- Backward-compatible JSON structure
-
-### **4. Configurable Integration**
-- Can be enabled/disabled per environment
-- Risk penalty adjustable per business context
-- No breaking changes to existing implementations
-
----
-
-## **✅ IMPLEMENTATION CHECKLIST**
-
-- [ ] **Step 1**: Add `RiskPolicy` class to `config.py`
-- [ ] **Step 2**: Add risk fields to `FeatureSpec` in `models.py` 
-- [ ] **Step 3**: Create `agents_feasibility.py` with `FeasibilityAgent`
-- [ ] **Step 4**: Add feasibility node to graph in `graph.py`
-- [ ] **Step 5**: Implement `feasibility_node` in `nodes.py`
-- [ ] **Step 6**: Add risk penalty logic to `scorer_node` in `nodes.py`
-- [ ] **Step 7**: Test with sample data
-- [ ] **Step 8**: Verify risk-adjusted scoring
-- [ ] **Step 9**: Test LLM-enhanced feasibility analysis
-- [ ] **Step 10**: Configure risk policy for your environment
-- [ ] **Step 11**: Train team on new risk metrics
-- [ ] **Step 12**: Update documentation and runbooks
-
----
-
-## **🎯 SUCCESS METRICS**
-
-### **Quantitative Metrics**
-- **Risk Accuracy**: % of high-risk features that actually encounter delivery issues
-- **Score Adjustment**: Average impact of risk penalty on final scores
-- **Processing Time**: Agent pipeline performance with additional node
-- **LLM Accuracy**: Agreement between LLM and manual risk assessments
-
-### **Qualitative Metrics**  
-- **TPM Confidence**: Increased confidence in prioritization decisions
-- **Stakeholder Satisfaction**: Better communication of delivery risks
-- **Planning Accuracy**: Improved sprint/release planning based on risk tags
-- **Team Alignment**: Shared understanding of technical delivery challenges
-
----
-
-## **🚀 NEXT STEPS AFTER IMPLEMENTATION**
-
-### **Phase 1: Validation (Week 1-2)**
-1. Implement all steps above
-2. Test with historical feature data
-3. Compare risk assessments with actual delivery outcomes
-4. Calibrate risk penalty based on team velocity
-
-### **Phase 2: Integration (Week 3-4)**
-1. Integrate with existing planning tools
-2. Train team on new risk metrics
-3. Establish risk review processes
-4. Create dashboards with risk visibility
-
-### **Phase 3: Optimization (Month 2)**
-1. Analyze risk prediction accuracy
-2. Refine keyword heuristics based on domain
-3. Enhance LLM prompts with team-specific context
-4. Automate risk policy adjustments
-
-### **Phase 4: Scaling (Month 3+)**
-1. Roll out to multiple teams
-2. Establish enterprise risk standards
-3. Create risk-based reporting for executives
-4. Integrate with portfolio management processes
-
----
-
-This implementation seamlessly integrates with your existing agentic architecture while adding powerful risk assessment capabilities that TPMs can configure without touching code!
