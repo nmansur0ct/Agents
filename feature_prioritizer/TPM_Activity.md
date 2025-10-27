@@ -1,4 +1,4 @@
-[# 🎯 **TPM Activity: Adding FeasibilityAgent for Risk Assessment**
+# 🎯 **TPM Activity: Adding FeasibilityAgent for Risk Assessment**
 
 ## **What You're Adding**
 A new **FeasibilityAgent** that evaluates delivery risk and applies risk penalties to feature scores.
@@ -39,6 +39,25 @@ class RiskPolicy(BaseModel):
     feasibility: Optional[str] = Field(None, description="Implementation feasibility: Low|Medium|High")
     risk_factor: Optional[float] = Field(0.4, ge=0, le=1, description="Risk factor (0=safe, 1=risky)")
     delivery_confidence: Optional[str] = Field(None, description="Confidence: Safe|MediumRisk|HighRisk")
+```
+
+**Note:** You'll also need to update the FeatureSpec constructor in `_extractor_node_impl` to include these fields:
+```python
+# In nodes.py, update FeatureSpec constructor:
+feature_spec = FeatureSpec(
+    name=raw_feature.name,
+    reach=_norm_hint(raw_feature.reach_hint, defaults['reach']),
+    revenue=_norm_hint(raw_feature.revenue_hint, defaults['revenue']),
+    risk_reduction=_norm_hint(raw_feature.risk_reduction_hint, defaults['risk_reduction']),
+    engineering=_norm_hint(raw_feature.engineering_hint, defaults['engineering']),
+    dependency=_norm_hint(raw_feature.dependency_hint, defaults['dependency']),
+    complexity=_norm_hint(raw_feature.complexity_hint, defaults['complexity']),
+    notes=final_notes,
+    # Risk assessment fields (will be populated by FeasibilityAgent)
+    feasibility=None,
+    risk_factor=0.4,  # Default risk factor
+    delivery_confidence=None
+)
 ```
 
 ---
@@ -205,9 +224,22 @@ from agents_feasibility import FeasibilityAgent
 
 **Action 2:** Add function after `extractor_node`:
 ```python
-@monitor_agent_execution
 def feasibility_node(state: State, config: Optional[Config] = None) -> State:
-    """Feasibility Agent Node - Assesses implementation risk."""
+    """
+    Agent 2: Feasibility Agent
+    Assesses implementation risk and delivery confidence for features.
+    """
+    
+    # Apply monitoring if enabled
+    if config and config.monitoring.enabled:
+        monitor = get_system_monitor()
+        decorator = monitor.get_monitoring_decorator("feasibility_agent", "assess_risk")
+        return decorator(_feasibility_node_impl)(state, config)
+    else:
+        return _feasibility_node_impl(state, config)
+
+def _feasibility_node_impl(state: State, config: Optional[Config] = None) -> State:
+    """Implementation of feasibility node with monitoring support."""
     cfg = config or Config.default()
     
     if "errors" not in state:
@@ -238,7 +270,7 @@ def feasibility_node(state: State, config: Optional[Config] = None) -> State:
         risk_note = ""
         
         if hasattr(feature, 'risk_factor') and feature.risk_factor is not None:
-            risk_multiplier = 1 - (cfg.risk.risk_penalty * feature.risk_factor)
+            risk_multiplier = 1 - (config.risk.risk_penalty * feature.risk_factor)
             final_score = score * risk_multiplier
             risk_note = f" | Risk-adjusted ({feature.delivery_confidence})"
         
@@ -360,7 +392,7 @@ config.llm_model = "gpt-4o-mini"  # or "gpt-3.5-turbo" for faster analysis
 - [ ] Added RiskPolicy to config.py
 - [ ] Added risk fields to models.py  
 - [ ] Created agents_feasibility.py with LLM support
-- [ ] Added feasibility_node to nodes.py
+- [ ] Added feasibility_node to nodes.py (using correct monitoring pattern)
 - [ ] Updated scorer_node for risk penalty
 - [ ] Updated graph.py with new agent
 - [ ] Tested basic mode and see 4 agents in monitoring
@@ -368,7 +400,34 @@ config.llm_model = "gpt-4o-mini"  # or "gpt-3.5-turbo" for faster analysis
 - [ ] Verified LLM analysis events in audit logs
 - [ ] Confirmed deterministic fallback works
 
+**✅ Implementation Note:** The FeasibilityAgent uses the same monitoring pattern as other nodes (conditional decorator) rather than the `@monitor_agent_execution` decorator which doesn't exist.
+
 **Result:** Features now have AI-enhanced risk assessment with LLM reasoning and risk-adjusted scores! 🤖🎯
+
+---
+
+## **🔧 Troubleshooting Common Issues**
+
+### **Issue 1: "monitor_agent_execution is not defined"**
+**Solution:** Use the conditional monitoring pattern as shown in Step 4, not a decorator.
+
+### **Issue 2: "Arguments missing for parameters feasibility, risk_factor, delivery_confidence"**
+**Solution:** Update the FeatureSpec constructor in `_extractor_node_impl` as shown in Step 2.
+
+### **Issue 3: "cfg is not defined"**
+**Solution:** Use `config` instead of `cfg` in the scorer node risk penalty code.
+
+### **Issue 4: Import errors for FeasibilityAgent**
+**Solution:** Make sure to create the `agents_feasibility.py` file exactly as shown in Step 3.
+
+### **Quick Verification:**
+```bash
+# Test imports work correctly
+cd /Users/n0m08hp/Agents/feature_prioritizer
+python -c "from config import Config; from models import FeatureSpec; from nodes import feasibility_node; print('✅ All imports successful')"
+```
+
+---
 
 ### **Sample LLM Output:**
 ```json
@@ -379,4 +438,4 @@ config.llm_model = "gpt-4o-mini"  # or "gpt-3.5-turbo" for faster analysis
   "delivery_confidence": "HighRisk", 
   "notes": ["Risk Assessment: High complexity AI feature requiring ML expertise, data pipeline setup, and model training infrastructure - significant unknowns in performance and accuracy"]
 }
-```](https://github.com/nmansur0ct/Agents/blob/v2/feature_prioritizer/FEATURE_PRIORITY_ARCHITECTURE.md)
+```
