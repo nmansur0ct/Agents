@@ -21,6 +21,10 @@ cd feature_prioritizer
 
 # Verify you have the latest code
 git pull origin v2
+
+
+# Install required Python dependencies
+pip install -r requirements.txt
 ```
 
 
