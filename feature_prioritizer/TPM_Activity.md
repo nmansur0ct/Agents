@@ -48,8 +48,6 @@ A new **FeasibilityAgent** that evaluates delivery risk and applies risk penalti
 
 ## ⚡ **Quick Implementation Steps**
 
-> **⚠️ Important:** The FeasibilityAgent is already implemented in the codebase. These steps verify and configure the existing implementation.
-
 ### **Step 1: Configure Environment Variables**
 **File:** Create `.env` in the `feature_prioritizer` folder
 
