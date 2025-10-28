@@ -1,6 +1,6 @@
-#  **TPM Activity: Adding FeasibilityAgent for Risk Assessment**
+# 🎯 **TPM Activity: Adding FeasibilityAgent for Risk Assessment**
 
-## ** Repository Setup**
+## **📦 Repository Setup**
 
 ### **Git Repository Information:**
 - **Repository URL:** `https://github.com/nmansur0ct/Agents.git`
@@ -22,11 +22,9 @@ cd feature_prioritizer
 # Verify you have the latest code
 git pull origin v2
 
-
 # Install required Python dependencies
 pip install -r requirements.txt
 ```
-
 
 ### **Working with Authentication:**
 ```bash
@@ -36,21 +34,6 @@ git clone https://GIT_TOKEN@github.com/nmansur0ct/Agents.git
 # Option 2: Set up authenticated remote (recommended)
 git remote add github-auth https://GIT_TOKEN@github.com/nmansur0ct/Agents.git
 git push github-auth v2  # Push changes using token
-```
-
-### **Create LLM configuration in .envfile**
-```bash
-crate file .env under /feature_prioritizer
-add 
-# This .env file contains environment variables for the feature prioritizer application.
-# It includes the OpenAI API key and other configuration settings for LLM integration.
-# OpenAI API Key
-OPENAI_API_AGENT_KEY=sk-proj-xxxxxx
-# LLM Configuration
-LLM_MODEL=gpt-3.5-turbo
-LLM_TEMPERATURE=0.3
-LLM_MAX_TOKENS=500
-LLM_TIMEOUT=30
 ```
 
 ---
@@ -63,7 +46,9 @@ A new **FeasibilityAgent** that evaluates delivery risk and applies risk penalti
 
 ---
 
-## **⚡ Quick Implementation Steps**
+## ⚡ **Quick Implementation Steps**
+
+> **⚠️ Important:** The FeasibilityAgent is already implemented in the codebase. These steps verify and configure the existing implementation.
 
 ### **Step 1: Configure Environment Variables**
 **File:** Create `.env` in the `feature_prioritizer` folder
@@ -117,11 +102,19 @@ class RiskPolicy(BaseModel):
 ### **Step 3: Add Risk Fields to Features**
 **File:** `models.py`
 
-**Action:** Add to FeatureSpec class after the `notes` field:
+**Action 1:** Add to FeatureSpec class after the `notes` field:
 ```python
     # Risk assessment fields
     feasibility: Optional[str] = Field(None, description="Implementation feasibility: Low|Medium|High")
     risk_factor: Optional[float] = Field(0.4, ge=0, le=1, description="Risk factor (0=safe, 1=risky)")
+    delivery_confidence: Optional[str] = Field(None, description="Confidence: Safe|MediumRisk|HighRisk")
+```
+
+**Action 2:** Add to ScoredFeature class after the `rationale` field:
+```python
+    # Risk assessment fields (carried from FeatureSpec)
+    feasibility: Optional[str] = Field(None, description="Implementation feasibility: Low|Medium|High")
+    risk_factor: Optional[float] = Field(None, ge=0, le=1, description="Risk factor (0=safe, 1=risky)")
     delivery_confidence: Optional[str] = Field(None, description="Confidence: Safe|MediumRisk|HighRisk")
 ```
 
@@ -298,15 +291,15 @@ class FeasibilityAgent:
 
 ---
 
-### **Step 5: Add Feasibility Node**
+### **Step 5: Verify Feasibility Node**
 **File:** `nodes.py`
 
-**Action 1:** Add import after line 17:
+**Action 1:** Verify import exists (should already be implemented):
 ```python
 from agents_feasibility import FeasibilityAgent
 ```
 
-**Action 2:** Add function after `extractor_node`:
+**Action 2:** Verify function exists (should already be implemented):
 ```python
 def feasibility_node(state: State, config: Optional[Config] = None) -> State:
     """
@@ -363,39 +356,55 @@ def _feasibility_node_impl(state: State, config: Optional[Config] = None) -> Sta
             impact=impact,
             effort=effort, 
             score=final_score,
-            rationale=rationale + risk_note
+            rationale=rationale + risk_note,
+            # Include risk assessment fields in final output
+            feasibility=getattr(feature, 'feasibility', None),
+            risk_factor=getattr(feature, 'risk_factor', None),
+            delivery_confidence=getattr(feature, 'delivery_confidence', None)
         ))
 ```
 
 ---
 
-### **Step 7: Update Graph**
+### **Step 7: Verify Graph Integration**
 **File:** `graph.py`
 
-**Action 1:** Update import:
+**Action 1:** Verify import (should already include feasibility_node):
 ```python
 from nodes import extractor_node, feasibility_node, scorer_node, prioritizer_node
 ```
 
-**Action 2:** Add to `_build_graph` method:
+**Action 2:** Verify the workflow in `_build_graph` method (should already be implemented):
 ```python
+        # Create wrapper functions that capture the config
+        def extractor_with_config(state: State) -> State:
+            return extractor_node(state, self.config)
+        
+        def scorer_with_config(state: State) -> State:
+            return scorer_node(state, self.config)
+        
+        def prioritizer_with_config(state: State) -> State:
+            return prioritizer_node(state, self.config)
+        
         # Add feasibility wrapper
         def feasibility_with_config(state: State) -> State:
             return feasibility_node(state, self.config)
         
         # Add all nodes
         workflow.add_node("extract", extractor_with_config)
-        workflow.add_node("feasibility", feasibility_with_config)  # NEW
+        workflow.add_node("feasibility", feasibility_with_config)
         workflow.add_node("score", scorer_with_config)
         workflow.add_node("prioritize", prioritizer_with_config)
         
-        # Update flow
+        # Set up the flow
         workflow.set_entry_point("extract")
-        workflow.add_edge("extract", "feasibility")     # NEW
-        workflow.add_edge("feasibility", "score")       # NEW
+        workflow.add_edge("extract", "feasibility")
+        workflow.add_edge("feasibility", "score")
         workflow.add_edge("score", "prioritize")
         workflow.add_edge("prioritize", END)
 ```
+
+**Note:** If the feasibility_node is not imported or the wrapper is missing, add them as shown above.
 
 ---
 
@@ -418,10 +427,10 @@ python run.py --file samples/features.json --llm --detailed --monitoring
 python run.py --file samples/features.json --llm --monitoring --save-monitoring-report feasibility_llm_test.json
 
 # Expected output shows feasibility_agent with LLM usage
-#  extractor_agent: ✅ Success Rate: 100.0%
-#  feasibility_agent: ✅ Success Rate: 100.0%  ← NEW AGENT WITH LLM
-#  scorer_agent: ✅ Success Rate: 100.0%
-#  prioritizer_agent: ✅ Success Rate: 100.0%
+# 🤖 extractor_agent: ✅ Success Rate: 100.0%
+# 🤖 feasibility_agent: ✅ Success Rate: 100.0%  ← NEW AGENT WITH LLM
+# 🤖 scorer_agent: ✅ Success Rate: 100.0%
+# 🤖 prioritizer_agent: ✅ Success Rate: 100.0%
 #
 # 📝 AUDIT EVENTS: 8
 # ├─ llm_analysis: 3 events (LLM risk assessments)
@@ -429,7 +438,7 @@ python run.py --file samples/features.json --llm --monitoring --save-monitoring-
 # └─ agent_execution: 4 events
 ```
 
-### ** Test with Different Industry Datasets**
+### **📊 Test with Different Industry Datasets**
 
 The repository includes multiple sample datasets for comprehensive testing:
 
@@ -457,7 +466,7 @@ These datasets provide different risk profiles and complexity patterns to thorou
 
 ---
 
-## ** Configuration Options**
+## **⚙️ Configuration Options**
 
 ```python
 # Risk Assessment Settings
@@ -519,6 +528,9 @@ config.llm_model = "gpt-4o-mini"  # or "gpt-3.5-turbo" for faster analysis
 - `.env` file exists in the feature_prioritizer directory
 - `OPENAI_API_AGENT_KEY` is set with a valid API key (starts with `sk-proj-` or `sk-`)
 - The API key has sufficient credits and permissions
+
+### **Issue 7: Feasibility fields missing from final output**
+**Solution:** Ensure both FeatureSpec AND ScoredFeature models include risk assessment fields as shown in Step 3, and that the scorer node passes these fields when creating ScoredFeature objects as shown in Step 6.
 
 ### **Quick Verification:**
 ```bash
