@@ -1,4 +1,4 @@
-# 🎯 **TPM Activity: Adding FeasibilityAgent for Risk Assessment**
+#  **TPM Activity: Adding FeasibilityAgent for Risk Assessment**
 
 ## **What You're Adding**
 A new **FeasibilityAgent** that evaluates delivery risk and applies risk penalties to feature scores.
@@ -8,7 +8,7 @@ A new **FeasibilityAgent** that evaluates delivery risk and applies risk penalti
 
 ---
 
-## **⚡ Quick Implementation Steps**
+## ** Quick Implementation Steps**
 
 ### **Step 1: Add Risk Configuration**
 **File:** `config.py`
@@ -347,7 +347,7 @@ python run.py --file samples/features.json --llm --monitoring --save-monitoring-
 
 ---
 
-## **⚙️ Configuration Options**
+## ** Configuration Options**
 
 ```python
 # Risk Assessment Settings
