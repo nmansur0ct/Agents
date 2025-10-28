@@ -470,7 +470,7 @@ from nodes import extractor_node, feasibility_node, scorer_node, prioritizer_nod
 ### **Quick Verification Commands:**
 ```bash
 # Navigate to project directory
-cd /Users/n0m08hp/Agents/feature_prioritizer
+cd feature_prioritizer
 
 # Test imports work correctly
 python -c "from config import Config; from models import FeatureSpec; from nodes import feasibility_node; print('✅ All imports successful')"
