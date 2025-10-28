@@ -297,7 +297,7 @@ class FeasibilityAgent:
 from agents_feasibility import FeasibilityAgent
 ```
 
-**Action 2:** Verify function exists (should already be implemented):
+**Action 2:** Verify function exists (should already be implemented)if not add after method def extractor_node:
 ```python
 def feasibility_node(state: State, config: Optional[Config] = None) -> State:
     """
