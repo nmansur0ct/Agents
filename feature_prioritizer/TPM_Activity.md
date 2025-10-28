@@ -503,16 +503,16 @@ print(f'   delivery_confidence={result.delivery_confidence}')
 python run.py --file samples/features.json --monitoring --performance-report
 
 # Test with LLM-enhanced risk analysis (requires API key)
-python run.py --file samples/features.json --llm --monitoring --performance-report
+python run.py --file samples/features.json --llm  --auto-save --monitoring --performance-report
 
 # Test deterministic mode only (no LLM)
-python run.py --file samples/features.json --monitoring
+python run.py --file samples/features.json --auto-save --monitoring
 
 # Test with detailed output to see risk adjustments
-python run.py --file samples/features.json --llm --detailed --monitoring
+python run.py --file samples/features.json --llm --detailed --monitoring --auto-save
 
 # Save monitoring report to see LLM usage
-python run.py --file samples/features.json --llm --monitoring --save-monitoring-report feasibility_llm_test.json
+python run.py --file samples/features.json --llm --auto-save --monitoring --save-monitoring-report feasibility_llm_test.json
 
 # Expected output shows feasibility_agent with LLM usage
 # 🤖 extractor_agent: ✅ Success Rate: 100.0%
