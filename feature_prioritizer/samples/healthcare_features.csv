@@ -1,0 +1,16 @@
+name,description,reach_hint,revenue_hint,risk_reduction_hint,engineering_hint,dependency_hint,complexity_hint
+Patient Portal,Secure web portal for patients to view medical records schedule appointments and communicate with providers,5,3,4,4,3,3
+Electronic Health Records,Complete EHR system with patient history medication tracking and clinical decision support,5,4,5,5,4,5
+Telemedicine Platform,Video consultation platform with scheduling payment integration and prescription management,4,5,3,4,4,4
+HIPAA Compliance Module,Comprehensive HIPAA compliance framework with audit trails and data encryption,4,2,5,4,3,4
+Appointment Scheduling,Online appointment booking with provider availability calendar integration and automated reminders,5,4,2,3,3,3
+Medical Billing System,Automated insurance claims processing with CPT coding and payment tracking,3,5,4,4,4,4
+Lab Results Integration,Integration with laboratory systems for automated test result delivery and reporting,4,3,4,3,4,3
+Prescription Management,E-prescribing system with drug interaction checking and pharmacy integration,4,4,5,4,4,4
+Mobile Health App,Patient mobile application for medication reminders health tracking and provider communication,4,3,3,4,3,4
+Clinical Decision Support,AI-powered diagnostic assistance and treatment recommendation system,3,4,4,5,3,5
+Insurance Verification,Real-time insurance eligibility verification and benefits checking system,4,4,3,3,3,3
+Medical Imaging Viewer,DICOM image viewer with annotation tools and radiology reporting integration,3,3,3,4,4,4
+Emergency Alert System,Critical patient alert system for emergency situations and care coordination,3,2,5,3,2,3
+Population Health Analytics,Healthcare analytics platform for tracking population health metrics and outcomes,2,3,3,4,3,4
+Medication Adherence Tracking,Patient medication compliance monitoring with automated reminders and reporting,3,3,4,3,2,3
