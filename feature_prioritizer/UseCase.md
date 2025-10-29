@@ -277,6 +277,11 @@ Launch it from Applications or by typing code in Terminal.
 timeline buffer activated. Confident in delivery window."
 ```
 
+```bash
+### Python installation
+1. install python version > 3.10 and above.
+
+```
 ---
 
 ## **❓ FAQ for TPMs**
