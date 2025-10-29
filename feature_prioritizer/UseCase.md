@@ -174,27 +174,65 @@ risk_penalty = 0.3  # 30% penalty for high-risk features
 
 ## ** Getting Started for TPMs**
 
-### **Phase 1: Setup & Training (Week 1)**
-1. **Environment Setup**: IT team configures FeasibilityAgent
-2. **Test Run**: Process current backlog through enhanced system
-3. **Team Training**: Brief engineering team on new risk fields
+### **Requirements**
+```bash
+Check Prerequisites
 
-### **Phase 2: Pilot Program (Weeks 2-4)**
-1. **Small Portfolio**: Test with 10-15 features from current quarter
-2. **Compare Results**: Review risk assessments vs historical delivery data
-3. **Calibration**: Adjust risk penalty settings based on team velocity
+Make sure you have:
 
-### **Phase 3: Full Deployment (Week 5+)**
-1. **All Feature Planning**: Use for all new feature prioritization
-2. **Historical Analysis**: Apply to past features to validate accuracy
-3. **Process Integration**: Incorporate into standard TPM workflows
+A supported OS (Windows 10/11, macOS 10.15+, or a modern Linux distro).
 
-### **Success Metrics for TPMs**
--  **Delivery Predictability**: % of features delivered on estimated timelines
-- **Risk Accuracy**: Correlation between risk ratings and actual delivery challenges
-- 💬 **Stakeholder Satisfaction**: Reduced surprise factor in delivery discussions
-- ⚡ **Planning Efficiency**: Time saved in manual risk assessment meetings
+Administrator rights to install applications.
 
+Internet connectivity.
+
+💻 2. Download VS Code
+
+Go to the official Microsoft site:
+👉 https://code.visualstudio.com/
+
+Click Download and choose your platform:
+
+Windows: User Installer (recommended) or System Installer
+
+macOS: .zip or .dmg file
+
+Linux: .deb (Debian/Ubuntu) or .rpm (Fedora/RHEL)
+
+⚙️ 3. Installation by Platform
+Windows
+
+Run the downloaded .exe file.
+
+Accept the license agreement.
+
+Choose installation location (default is fine).
+
+Select these options when prompted:
+
+Add “Open with Code” to context menu
+
+Add to PATH (important for command-line use)
+
+Click Install → wait for it to finish.
+
+Launch VS Code when complete.
+
+macOS
+
+Open the downloaded .dmg file.
+
+Drag Visual Studio Code.app to the Applications folder.
+
+Open Terminal and run:
+
+export PATH="$PATH:/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
+
+
+(or open VS Code and use Command Palette → Shell Command: Install ‘code’ command in PATH).
+
+Launch it from Applications or by typing code in Terminal.
+```
 ---
 
 ## **🔍 Sample TPM Workflows**
