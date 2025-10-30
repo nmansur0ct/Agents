@@ -6,11 +6,13 @@ Implements the StateGraph with linear execution flow: Extract -> Score -> Priori
 from typing import List, Optional
 from langgraph.graph import StateGraph, END
 from models import RawFeature, State
-from nodes import extractor_node, scorer_node, prioritizer_node
+# from nodes import extractor_node, scorer_node, prioritizer_node
 from config import Config
 
 # Import monitoring functionality
 from monitoring import initialize_monitoring, get_system_monitor
+
+from nodes import extractor_node, feasibility_node, scorer_node, prioritizer_node
 
 class FeaturePrioritizationGraph:
     """LangGraph orchestration for feature prioritization pipeline."""
@@ -38,19 +40,27 @@ class FeaturePrioritizationGraph:
         def prioritizer_with_config(state: State) -> State:
             return prioritizer_node(state, self.config)
         
-        # Create the state graph
+       
+        # Add feasibility wrapper
+        def feasibility_with_config(state: State) -> State:
+            return feasibility_node(state, self.config)
+        
+         # Create the state graph
         workflow = StateGraph(State)
         
-        # Add nodes with config-aware wrappers
+        
+        # Add all nodes
         workflow.add_node("extract", extractor_with_config)
+        workflow.add_node("feasibility", feasibility_with_config)
         workflow.add_node("score", scorer_with_config)
         workflow.add_node("prioritize", prioritizer_with_config)
         
-        # Define the flow: START -> extract -> score -> prioritize -> END
+        # Define the flow: START -> extract -> feasibility -> score -> prioritize -> END
         workflow.set_entry_point("extract")
-        workflow.add_edge("extract", "score")
-        workflow.add_edge("score", "prioritize")
-        workflow.add_edge("prioritize", END)
+        workflow.add_edge("extract", "feasibility")      # Extract goes to Feasibility
+        workflow.add_edge("feasibility", "score")        # Feasibility goes to Score
+        workflow.add_edge("score", "prioritize")         # Score goes to Prioritize
+        workflow.add_edge("prioritize", END)             # Prioritize goes to End
         
         return workflow.compile()
     

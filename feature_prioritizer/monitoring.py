@@ -233,6 +233,31 @@ class AuditTrail:
         except Exception:
             return hashlib.md5(str(data).encode()).hexdigest()
     
+    def log_event(self, agent_name: str, event_type: str, details: Dict[str, Any]):
+        """Log a simple event for agent activities."""
+        try:
+            # Create a simple audit entry for the event
+            entry = AuditLogEntry(
+                timestamp=datetime.now(),
+                agent_name=agent_name,
+                action=event_type,
+                input_hash=self._hash_data(details),
+                output_hash=self._hash_data(details),
+                config_snapshot={},
+                execution_time=0.0,
+                success=True,
+                decision_factors=details,
+                confidence_score=1.0,
+                error_details=None
+            )
+            
+            self.audit_entries.append(entry)
+            self._log_audit_entry(entry)
+            
+            print(f"📝 Audit: {agent_name} - {event_type}")
+            
+        except Exception as e:
+            print(f"⚠️ Audit logging failed: {str(e)}")
     def _serialize_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
         """Serialize configuration for audit trail."""
         return {

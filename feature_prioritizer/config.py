@@ -8,6 +8,12 @@ from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
 from models import ImpactWeights, EffortWeights, MonitoringConfig
 
+class RiskPolicy(BaseModel):
+    """Risk assessment configuration for feasibility validation."""
+    risk_penalty: float = Field(default=0.5, ge=0, le=1, description="Risk penalty multiplier")
+    enable_feasibility_agent: bool = Field(default=True, description="Enable feasibility agent")
+    use_llm_analysis: bool = Field(default=True, description="Use LLM for risk analysis")
+
 class ScoringPolicy(str, Enum):
     """Available scoring policies for feature prioritization."""
     RICE = "RICE"
@@ -43,6 +49,9 @@ class Config(BaseModel):
 
     # Monitoring and observability configuration
     monitoring: MonitoringConfig = Field(default_factory=MonitoringConfig, description="Monitoring and observability settings")
+
+    # Risk assessment configuration
+    risk: RiskPolicy = Field(default_factory=lambda: RiskPolicy(), description="Risk assessment configuration")
     
     # Keyword heuristics for automatic inference
     keyword_mappings: Dict[str, Dict[str, float]] = Field(

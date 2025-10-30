@@ -31,6 +31,10 @@ class FeatureSpec(BaseModel):
     dependency: float = Field(..., ge=0, le=1, description="Normalized dependency complexity")
     complexity: float = Field(..., ge=0, le=1, description="Normalized implementation complexity")
     notes: List[str] = Field(default_factory=list, description="Extraction notes and reasoning")
+    # Risk assessment fields - CRITICAL for output population
+    feasibility: Optional[str] = Field(None, description="Implementation feasibility: Low|Medium|High")
+    risk_factor: Optional[float] = Field(0.4, ge=0, le=1, description="Risk factor (0=safe, 1=risky)")
+    delivery_confidence: Optional[str] = Field(None, description="Confidence: Safe|MediumRisk|HighRisk")
 
 class ScoredFeature(BaseModel):
     """Feature with computed impact, effort, and final score."""
@@ -39,6 +43,10 @@ class ScoredFeature(BaseModel):
     effort: float = Field(..., ge=0, le=1, description="Combined effort score (higher = more effort)")
     score: float = Field(..., description="Final prioritization score")
     rationale: str = Field(..., description="Scoring rationale and key factors")
+    # Risk assessment fields (carried from FeatureSpec) - CRITICAL for CSV output
+    feasibility: Optional[str] = Field(None, description="Implementation feasibility: Low|Medium|High")
+    risk_factor: Optional[float] = Field(None, ge=0, le=1, description="Risk factor (0=safe, 1=risky)")
+    delivery_confidence: Optional[str] = Field(None, description="Confidence: Safe|MediumRisk|HighRisk")
 
 class ExtractorOutput(BaseModel):
     """Output from the feature extraction agent."""
