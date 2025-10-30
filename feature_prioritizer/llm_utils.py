@@ -25,6 +25,70 @@ except Exception:
     _OPENAI_AVAILABLE = False
     _OPENAI_CLIENT_CLASS = None
 
+def call_llm_json(prompt: str, model: str = "gpt-3.5-turbo", 
+                  temperature: float = 0.3, provider: str = "auto") -> Tuple[Optional[Dict], Optional[str]]:
+    """
+    Universal LLM JSON call supporting OpenAI and Gemini via LLPM gateway.
+    Auto-detects provider based on available environment variables.
+    """
+    import os
+    import json
+    import requests
+    from typing import Dict, Optional, Tuple
+    
+    # Auto-detect provider if not specified
+    if provider == "auto":
+        if os.getenv("LLPM_KEY"):
+            provider = "gemini"
+        elif os.getenv("OPENAI_API_AGENT_KEY"):
+            provider = "openai"
+        else:
+            return None, "No API keys found for LLM providers"
+    
+    try:
+        if provider == "gemini":
+            # Use LLPM gateway for Gemini
+            url = "https://llpm.gateway.ai/v1/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {os.getenv('LLMP_KEY')}",
+                "Content-Type": "application/json"
+            }
+            data = {
+                "model": "gemini-1.5-flash",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": temperature
+            }
+            response = requests.post(url, headers=headers, json=data, timeout=30)
+            response.raise_for_status()
+            content = response.json()["choices"][0]["message"]["content"]
+            return json.loads(content), None
+            
+        elif provider == "openai":
+            # Use OpenAI directly with new client format
+            from openai import OpenAI
+            client = OpenAI(api_key=os.getenv("OPENAI_API_AGENT_KEY"))
+            
+            response = client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=temperature,
+                max_tokens=500
+            )
+            content = response.choices[0].message.content
+            if content is None:
+                return None, "OpenAI returned empty content"
+            return json.loads(content), None
+            
+        else:
+            return None, f"Unsupported provider: {provider}"
+            
+    except json.JSONDecodeError as e:
+        return None, f"JSON decode error: {str(e)}"
+    except requests.exceptions.RequestException as e:
+        return None, f"Connection error."
+    except Exception as e:
+        return None, f"Unexpected error: {str(e)}"
+
 def call_openai_json(model: str, api_key_env: str, prompt: str, temperature: float = 0.0):
     """
     Call OpenAI API with JSON response format.

@@ -6,8 +6,13 @@ Implements the StateGraph with linear execution flow: Extract -> Score -> Priori
 from typing import List, Optional
 from langgraph.graph import StateGraph, END
 from models import RawFeature, State
-from nodes import extractor_node, scorer_node, prioritizer_node
+# from nodes import extractor_node, scorer_node, prioritizer_node
 from config import Config
+
+# Import monitoring functionality
+from monitoring import initialize_monitoring, get_system_monitor
+
+from nodes import extractor_node, feasibility_node, scorer_node, prioritizer_node
 
 class FeaturePrioritizationGraph:
     """LangGraph orchestration for feature prioritization pipeline."""
@@ -15,6 +20,12 @@ class FeaturePrioritizationGraph:
     def __init__(self, config: Optional[Config] = None):
         """Initialize the graph with optional configuration."""
         self.config = config or Config.default()
+        
+
+        # Initialize monitoring if enabled
+        if self.config.monitoring.enabled:
+            initialize_monitoring(self.config.model_dump())
+        
         self.graph = self._build_graph()
 
     def _build_graph(self):
@@ -29,19 +40,27 @@ class FeaturePrioritizationGraph:
         def prioritizer_with_config(state: State) -> State:
             return prioritizer_node(state, self.config)
         
-        # Create the state graph
+       
+        # Add feasibility wrapper
+        def feasibility_with_config(state: State) -> State:
+            return feasibility_node(state, self.config)
+        
+         # Create the state graph
         workflow = StateGraph(State)
         
-        # Add nodes with config-aware wrappers
+        
+        # Add all nodes
         workflow.add_node("extract", extractor_with_config)
+        workflow.add_node("feasibility", feasibility_with_config)
         workflow.add_node("score", scorer_with_config)
         workflow.add_node("prioritize", prioritizer_with_config)
         
-        # Define the flow: START -> extract -> score -> prioritize -> END
+        # Define the flow: START -> extract -> feasibility -> score -> prioritize -> END
         workflow.set_entry_point("extract")
-        workflow.add_edge("extract", "score")
-        workflow.add_edge("score", "prioritize")
-        workflow.add_edge("prioritize", END)
+        workflow.add_edge("extract", "feasibility")      # Extract goes to Feasibility
+        workflow.add_edge("feasibility", "score")        # Feasibility goes to Score
+        workflow.add_edge("score", "prioritize")         # Score goes to Prioritize
+        workflow.add_edge("prioritize", END)             # Prioritize goes to End
         
         return workflow.compile()
     
@@ -134,6 +153,29 @@ class FeaturePrioritizationGraph:
                 }
         
         return results
+    
+
+    def get_monitoring_report(self):
+        """Get comprehensive monitoring report if monitoring is enabled."""
+        if self.config.monitoring.enabled:
+            monitor = get_system_monitor()
+            return monitor.generate_monitoring_report()
+        return None
+    
+    def print_performance_summary(self):
+        """Print performance summary to console if monitoring is enabled."""
+        if self.config.monitoring.enabled:
+            monitor = get_system_monitor()
+            monitor.print_performance_summary()
+        else:
+            print("📊 Monitoring is disabled. Enable monitoring in config to see performance metrics.")
+    
+    def save_monitoring_report(self, filename: Optional[str] = None):
+        """Save monitoring report to file if monitoring is enabled."""
+        if self.config.monitoring.enabled:
+            monitor = get_system_monitor()
+            return monitor.save_monitoring_report(filename)
+        return None
 
 # Convenience function for simple usage
 def prioritize_features(raw_features: List[RawFeature], config: Optional[Config] = None) -> List[dict]:

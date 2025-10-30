@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+
 Feature Prioritization Assistant - CLI Entry Point
 Provides command-line interface for feature prioritization with JSON and file input support.
 """
@@ -84,7 +85,22 @@ from config import Config, ScoringPolicy
     default='results',
     help='Directory to save results (default: results)'
 )
-def main(file, json_input, metric, output, detailed, csv_output, verbose, llm, model, keyenv, auto_save, results_dir):
+@click.option(
+    '--monitoring',
+    is_flag=True,
+    help='Enable monitoring and performance tracking during execution'
+)
+@click.option(
+    '--performance-report',
+    is_flag=True,
+    help='Generate and display detailed performance report after execution'
+)
+@click.option(
+    '--save-monitoring-report',
+    type=str,
+    help='Save monitoring report to specified file (JSON format)'
+)
+def main(file, json_input, metric, output, detailed, csv_output, verbose, llm, model, keyenv, auto_save, results_dir, monitoring, performance_report, save_monitoring_report):
     """
     Feature Prioritization Assistant
     
@@ -99,6 +115,12 @@ def main(file, json_input, metric, output, detailed, csv_output, verbose, llm, m
         
         # With LLM enhancements 
         python run.py --file features.json --metric RICE --llm --auto-save
+        
+        # With monitoring and performance tracking
+        python run.py --file features.json --metric RICE --monitoring --performance-report
+        
+        # Save detailed monitoring report
+        python run.py --file features.json --llm --monitoring --save-monitoring-report monitor_report.json
         
         # Custom output locations (will be timestamped automatically)
         python run.py --file features.csv --output analysis.json --detailed
@@ -131,12 +153,19 @@ def main(file, json_input, metric, output, detailed, csv_output, verbose, llm, m
         # Configure scoring policy with LLM settings
         config = get_config_for_metric(metric, llm, model, keyenv)
         
+        # Enable monitoring if requested
+        if monitoring:
+            # Simply set monitoring enabled on the existing config
+            config.monitoring.enabled = True
+        
         if verbose:
             click.echo(f"Using {metric} scoring policy")
             if llm:
                 click.echo(f"LLM enhancements enabled using {model}")
             else:
                 click.echo("LLM enhancements disabled")
+            if monitoring:
+                click.echo("Monitoring enabled - performance tracking active")
         
         # Process features
         graph = FeaturePrioritizationGraph(config)
@@ -206,6 +235,52 @@ def main(file, json_input, metric, output, detailed, csv_output, verbose, llm, m
                     click.echo(f"  Lowest score: {summary.get('lowest_score', 0):.3f}")
                     click.echo(f"  Average score: {summary.get('average_score', 0):.3f}")
                     click.echo(f"  Score range: {summary.get('score_range', 0):.3f}")
+        
+        # Handle monitoring reports if monitoring was enabled
+        if monitoring or performance_report or save_monitoring_report:
+            try:
+                monitoring_report = graph.get_monitoring_report()
+                
+                # Display performance report if requested
+                if performance_report:
+                    graph.print_performance_summary()
+                
+                # Save monitoring report if requested
+                if save_monitoring_report:
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    # If relative path, put in results directory with timestamp
+                    monitor_file = Path(save_monitoring_report)
+                    if not monitor_file.is_absolute() and monitor_file.parent == Path('.'):
+                        stem = monitor_file.stem
+                        monitor_file = Path(results_dir) / f"{stem}_{timestamp}.json"
+                    
+                    # Ensure we have an absolute path for the monitoring system
+                    if not monitor_file.is_absolute():
+                        monitor_file = Path.cwd() / monitor_file
+                    
+                    graph.save_monitoring_report(str(monitor_file))
+                    
+                    if verbose:
+                        click.echo(f"Monitoring report saved to: {monitor_file}")
+                
+                # Show basic monitoring summary if monitoring was enabled but no specific report requested
+                elif monitoring and verbose:
+                    click.echo("\nMonitoring Summary:")
+                    if monitoring_report and monitoring_report.agent_performance:
+                        total_calls = sum(perf.total_executions 
+                                         for perf in monitoring_report.agent_performance.values())
+                        click.echo(f"  Total agent calls: {total_calls}")
+                        
+                        if monitoring_report.system_health:
+                            health = monitoring_report.system_health
+                            click.echo(f"  System uptime: {health.uptime_seconds:.3f}s")
+                            click.echo(f"  Overall success rate: {health.overall_success_rate:.1%}")
+                            if health.total_llm_calls > 0:
+                                click.echo(f"  Total LLM tokens: {health.total_llm_tokens}")
+                            
+            except Exception as e:
+                if verbose:
+                    click.echo(f"Warning: Could not generate monitoring report: {str(e)}", err=True)
         
     except Exception as e:
         click.echo(f"Error: {str(e)}", err=True)

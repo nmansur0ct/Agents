@@ -1,0 +1,16 @@
+name,description,reach_hint,revenue_hint,risk_reduction_hint,engineering_hint,dependency_hint,complexity_hint
+Smart Traffic Management,AI-powered traffic light optimization with real-time traffic flow analysis and congestion reduction,4,3,4,5,4,5
+Environmental Monitoring Network,City-wide air quality water quality and noise pollution monitoring with public dashboards,3,2,4,4,4,4
+Smart Parking System,IoT-enabled parking space detection with mobile app integration and dynamic pricing,4,4,2,3,3,3
+Public Transportation Optimizer,Real-time bus and train tracking with route optimization and passenger information systems,4,3,3,4,4,4
+Smart Street Lighting,Adaptive LED street lighting with motion sensors and remote control for energy efficiency,3,3,3,3,3,3
+Waste Management Optimization,Smart waste bins with fill-level sensors and optimized collection route planning,3,3,3,3,3,3
+Emergency Response Coordination,Integrated emergency services platform with incident detection and resource dispatch optimization,3,2,5,4,4,4
+Smart Energy Grid,Distributed energy management with renewable integration and demand response capabilities,2,4,4,5,5,5
+Citizen Services Portal,Digital platform for city services with permit applications bill payments and service requests,4,3,3,3,3,3
+Public Safety Analytics,Crime prediction and prevention system using surveillance data and predictive analytics,3,2,5,5,4,5
+Smart Water Management,Water distribution monitoring with leak detection pressure optimization and quality tracking,3,3,4,4,4,4
+Digital Signage Network,City-wide digital signage for public information emergency alerts and advertising revenue,3,4,2,3,3,3
+Urban Planning Analytics,Data-driven urban development planning with simulation modeling and impact assessment,2,3,3,4,3,4
+Smart Building Management,Automated building systems for HVAC lighting and security with occupancy optimization,3,4,3,4,3,4
+Community Engagement Platform,Digital town halls with citizen feedback polling and participatory budgeting tools,3,2,2,2,2,2

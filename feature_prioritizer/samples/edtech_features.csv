@@ -1,0 +1,16 @@
+name,description,reach_hint,revenue_hint,risk_reduction_hint,engineering_hint,dependency_hint,complexity_hint
+Learning Management System,Comprehensive LMS with course creation student tracking and grade management,5,4,2,4,3,4
+Virtual Classroom Platform,Live video conferencing with screen sharing whiteboard and breakout rooms for online classes,5,4,3,4,4,4
+Student Information System,Complete student records management with enrollment grades and attendance tracking,4,3,3,3,3,3
+Adaptive Learning Engine,AI-powered personalized learning paths that adapt to individual student progress and needs,3,4,3,5,3,5
+Online Assessment Tools,Digital testing platform with anti-cheating measures automated grading and analytics,4,3,4,4,3,4
+Mobile Learning App,Student mobile application for accessing courses assignments and collaborating with peers,4,3,2,3,3,3
+Parent Communication Portal,Platform for parents to track student progress receive updates and communicate with teachers,4,2,2,2,2,2
+Digital Library System,Online resource library with e-books research databases and citation management tools,3,3,2,3,3,3
+Plagiarism Detection Tool,Advanced plagiarism checking with similarity analysis and academic integrity reporting,3,3,4,3,2,3
+Gamification Engine,Game-based learning system with badges leaderboards and achievement tracking,3,3,2,4,2,4
+Course Authoring Tools,Content creation tools for educators to build interactive courses and multimedia lessons,3,4,2,4,3,4
+Attendance Tracking System,Automated attendance monitoring with facial recognition and mobile check-in options,3,2,3,3,3,3
+Career Services Platform,Job placement assistance with resume building interview prep and employer connections,3,3,2,3,3,3
+Accessibility Compliance Suite,Tools to ensure WCAG compliance with screen reader support and alternative formats,2,2,4,3,2,3
+Analytics Dashboard,Educational data analytics with student performance insights and institutional reporting,2,3,3,3,3,3

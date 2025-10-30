@@ -1,0 +1,16 @@
+name,description,reach_hint,revenue_hint,risk_reduction_hint,engineering_hint,dependency_hint,complexity_hint
+Employee Self-Service Portal,Web portal for employees to manage personal information benefits and time-off requests,5,3,3,3,2,3
+Applicant Tracking System,Recruitment management with job posting applicant screening and interview scheduling,4,4,3,4,3,4
+Payroll Processing Engine,Automated payroll calculation with tax deductions benefits and direct deposit integration,5,4,4,4,4,4
+Performance Management System,Employee performance reviews goal setting and 360-degree feedback collection platform,4,3,3,3,2,3
+Time and Attendance Tracking,Digital time clock with overtime calculation PTO tracking and scheduling integration,5,3,3,3,3,3
+Benefits Administration Portal,Employee benefits enrollment and management with healthcare and retirement plan integration,4,3,4,3,4,3
+Learning and Development Platform,Corporate training management with course catalogs skill assessments and certification tracking,3,3,2,3,3,3
+Employee Onboarding System,Digital onboarding workflow with document collection training assignments and compliance tracking,4,2,4,3,2,3
+HR Analytics Dashboard,Workforce analytics with turnover rates performance metrics and compensation analysis,2,4,2,3,3,3
+Talent Management Suite,Comprehensive talent management with succession planning career development and skill gap analysis,3,4,3,4,3,4
+Employee Engagement Surveys,Automated survey platform for measuring employee satisfaction and organizational culture,3,2,2,2,2,2
+Compliance Management System,HR compliance tracking with labor law updates audit trails and regulatory reporting,3,3,5,3,3,3
+Remote Work Management,Tools for managing distributed teams with productivity tracking and collaboration features,4,3,2,3,3,3
+Expense Management System,Employee expense reporting with receipt scanning approval workflows and reimbursement tracking,4,3,3,3,3,3
+Workforce Planning Tools,Strategic workforce planning with headcount forecasting budget planning and organizational design,2,4,3,4,3,4

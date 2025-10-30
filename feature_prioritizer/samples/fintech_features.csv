@@ -1,0 +1,16 @@
+name,description,reach_hint,revenue_hint,risk_reduction_hint,engineering_hint,dependency_hint,complexity_hint
+Digital Wallet,Secure digital wallet for storing payment methods and making contactless transactions,5,4,4,4,4,4
+Fraud Detection Engine,Real-time machine learning fraud detection with risk scoring and transaction monitoring,4,3,5,5,3,5
+KYC Identity Verification,Know Your Customer verification system with document scanning and identity validation,4,2,5,4,4,4
+Personal Financial Manager,Budgeting and expense tracking tool with spending analytics and financial insights,4,4,2,3,3,3
+Investment Portfolio Tracker,Real-time portfolio management with market data integration and performance analytics,3,5,3,4,4,4
+Cryptocurrency Exchange,Digital asset trading platform with order matching and wallet integration,3,5,4,5,4,5
+Loan Origination System,Digital loan application processing with credit scoring and approval workflows,4,5,4,4,4,4
+RegTech Compliance Suite,Automated regulatory compliance monitoring and reporting for financial regulations,3,3,5,4,3,4
+Robo-Advisor Platform,Automated investment advisory service with portfolio rebalancing and tax optimization,3,4,3,5,3,5
+Payment Gateway Integration,Multi-provider payment processing with failover and fraud prevention,5,4,4,4,5,4
+Credit Score Monitoring,Real-time credit score tracking with alerts and improvement recommendations,4,3,3,3,3,3
+Insurance Claims Processing,Automated insurance claim processing with document analysis and fraud detection,3,4,4,4,3,4
+Wealth Management Dashboard,High-net-worth client management with relationship tracking and advisory tools,2,5,3,4,3,4
+Open Banking API,PSD2 compliant API platform for third-party financial service integrations,3,3,4,4,4,4
+Blockchain Transaction Logger,Immutable transaction recording system using blockchain technology,2,3,4,5,3,5

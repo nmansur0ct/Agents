@@ -1,0 +1,16 @@
+name,description,reach_hint,revenue_hint,risk_reduction_hint,engineering_hint,dependency_hint,complexity_hint
+Predictive Maintenance System,AI-powered equipment failure prediction with IoT sensor integration and maintenance scheduling,4,5,5,5,4,5
+Digital Twin Platform,Virtual factory modeling with real-time synchronization for simulation and optimization,2,4,4,5,4,5
+Quality Control Automation,Computer vision-based defect detection with automated reject systems and quality reporting,4,4,4,4,3,4
+Supply Chain Visibility,End-to-end supply chain tracking with vendor integration and risk assessment capabilities,3,4,4,4,5,4
+Manufacturing Execution System,Real-time production monitoring with work order management and resource optimization,4,4,3,4,4,4
+Energy Management Platform,Factory-wide energy consumption monitoring with optimization recommendations and cost tracking,3,4,4,3,3,3
+Inventory Optimization Engine,AI-driven inventory management with demand forecasting and automated replenishment,4,5,3,4,3,4
+Worker Safety Monitoring,Wearable device integration for monitoring worker health and safety in hazardous environments,3,2,5,3,3,3
+Production Scheduling Optimizer,Advanced production planning with constraint optimization and real-time rescheduling,3,4,3,4,3,4
+Asset Performance Management,Comprehensive asset lifecycle management with performance analytics and ROI tracking,3,4,4,4,3,4
+Robotic Process Automation,Industrial automation with robotic systems integration and process orchestration,3,4,3,5,4,5
+Environmental Compliance Monitor,Automated environmental compliance tracking with emissions monitoring and regulatory reporting,3,2,5,3,3,3
+Lean Manufacturing Analytics,Waste reduction analytics with process improvement recommendations and efficiency metrics,3,4,3,3,2,3
+Remote Equipment Monitoring,IoT-enabled remote monitoring of distributed equipment with alert systems and diagnostics,3,3,4,4,4,4
+Supplier Quality Management,Vendor quality assessment with incoming inspection automation and supplier scorecards,3,3,4,3,4,3

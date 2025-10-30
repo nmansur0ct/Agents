@@ -14,6 +14,10 @@ from models import (
 from config import Config, ScoringPolicy
 from llm_utils import call_openai_json
 
+# Import monitoring functionality
+from monitoring import get_system_monitor
+from agents_feasibility import FeasibilityAgent
+
 def _norm_hint(hint_value: Optional[int] = None, default: float = 0.5) -> float:
     """
     Normalize hint value from 1-5 scale to 0-1 scale.
@@ -231,6 +235,55 @@ def extractor_node(state: State, config: Optional[Config] = None) -> State:
     Agent 1: Feature Extractor
     Converts RawFeature list to normalized FeatureSpec list.
     """
+
+    # Apply monitoring if enabled
+    if config and config.monitoring.enabled:
+        monitor = get_system_monitor()
+        decorator = monitor.get_monitoring_decorator("extractor_agent", "extract_features")
+        return decorator(_extractor_node_impl)(state, config)
+    else:
+        return _extractor_node_impl(state, config)
+
+def feasibility_node(state: State, config: Optional[Config] = None) -> State:
+    """
+    Agent 2: Feasibility Agent
+    Assesses implementation risk and delivery confidence for features.
+    """
+    print("🚀 Feasibility Node: Starting risk assessment")
+    
+    # Apply monitoring if enabled
+    if config and config.monitoring.enabled:
+        monitor = get_system_monitor()
+        decorator = monitor.get_monitoring_decorator("feasibility_agent", "assess_risk")
+        return decorator(_feasibility_node_impl)(state, config)
+    else:
+        return _feasibility_node_impl(state, config)
+
+def _feasibility_node_impl(state: State, config: Optional[Config] = None) -> State:
+    """Implementation of feasibility node with comprehensive debugging."""
+    cfg = config or Config.default()
+    
+    if "errors" not in state:
+        state["errors"] = []
+    
+    extracted_output = state.get("extracted")
+    if not extracted_output or not hasattr(extracted_output, 'features'):
+        state["errors"].append("feasibility_node:no_extracted_features")
+        return state
+    
+    print(f"📋 Feasibility Node: Processing {len(extracted_output.features)} features")
+    
+    feasibility_agent = FeasibilityAgent(cfg)
+    enriched_features = feasibility_agent.enrich(extracted_output.features, state["errors"])
+    
+    extracted_output.features = enriched_features
+    state["extracted"] = extracted_output
+    
+    print("✅ Feasibility Node: Completed risk assessment")
+    return state
+
+def _extractor_node_impl(state: State, config: Optional[Config] = None) -> State:
+    """Implementation of extractor node with monitoring support."""
     try:
         if config is None:
             config = Config.default()
@@ -267,7 +320,11 @@ def extractor_node(state: State, config: Optional[Config] = None) -> State:
                 engineering=_norm_hint(raw_feature.engineering_hint, defaults['engineering']),
                 dependency=_norm_hint(raw_feature.dependency_hint, defaults['dependency']),
                 complexity=_norm_hint(raw_feature.complexity_hint, defaults['complexity']),
-                notes=final_notes
+                notes=final_notes,
+                # Risk assessment fields (will be populated by FeasibilityAgent)
+                feasibility=None,
+                risk_factor=0.4,  # Default risk factor
+                delivery_confidence=None
             )
             
             extracted_features.append(feature_spec)
@@ -287,6 +344,17 @@ def scorer_node(state: State, config: Optional[Config] = None) -> State:
     Agent 2: Impact-Effort Scorer
     Computes impact and effort scores using weighted sums.
     """
+
+    # Apply monitoring if enabled
+    if config and config.monitoring.enabled:
+        monitor = get_system_monitor()
+        decorator = monitor.get_monitoring_decorator("scorer_agent", "score_features")
+        return decorator(_scorer_node_impl)(state, config)
+    else:
+        return _scorer_node_impl(state, config)
+
+def _scorer_node_impl(state: State, config: Optional[Config] = None) -> State:
+    """Implementation of scorer node with monitoring support."""
     try:
         if config is None:
             config = Config.default()
@@ -300,7 +368,7 @@ def scorer_node(state: State, config: Optional[Config] = None) -> State:
         
         scored_features = []
         
-        for feature in extracted_output.features:
+        for i, feature in enumerate(extracted_output.features):
             # Calculate impact score
             impact = (
                 feature.reach * config.impact_weights.reach +
@@ -353,15 +421,28 @@ def scorer_node(state: State, config: Optional[Config] = None) -> State:
             
             rationale = "; ".join(rationale_parts) if rationale_parts else "Standard scoring"
             
-            scored_feature = ScoredFeature(
-                name=feature.name,
-                impact=round(impact, 3),
-                effort=round(effort, 3),
-                score=round(score, 3),
-                rationale=rationale
-            )
+            # Apply risk penalty if available - ENHANCED with debugging
+            final_score = score
+            risk_note = ""
             
-            scored_features.append(scored_feature)
+            print(f"   Scoring {i+1}: {feature.name} - feasibility={getattr(feature, 'feasibility', None)}, risk={getattr(feature, 'risk_factor', None)}")
+            
+            if hasattr(feature, 'risk_factor') and feature.risk_factor is not None:
+                risk_multiplier = 1 - (config.risk.risk_penalty * feature.risk_factor)
+                final_score = score * risk_multiplier
+                risk_note = f" | Risk-adjusted ({getattr(feature, 'delivery_confidence', 'Unknown')})"
+            
+            scored_features.append(ScoredFeature(
+                name=feature.name,
+                impact=impact,
+                effort=effort, 
+                score=final_score,
+                rationale=rationale + risk_note,
+                # CRITICAL: Include risk assessment fields in final output
+                feasibility=getattr(feature, 'feasibility', None),
+                risk_factor=getattr(feature, 'risk_factor', None),
+                delivery_confidence=getattr(feature, 'delivery_confidence', None)
+            ))
         
         # Update state with scored features
         state['scored'] = ScorerOutput(scored=scored_features)
@@ -378,6 +459,17 @@ def prioritizer_node(state: State, config: Optional[Config] = None) -> State:
     Agent 3: Prioritizer
     Sorts features by score in descending order.
     """
+
+    # Apply monitoring if enabled
+    if config and config.monitoring.enabled:
+        monitor = get_system_monitor()
+        decorator = monitor.get_monitoring_decorator("prioritizer_agent", "prioritize_features")
+        return decorator(_prioritizer_node_impl)(state, config)
+    else:
+        return _prioritizer_node_impl(state, config)
+
+def _prioritizer_node_impl(state: State, config: Optional[Config] = None) -> State:
+    """Implementation of prioritizer node with monitoring support."""
     try:
         if config is None:
             config = Config.default()
@@ -410,7 +502,10 @@ def prioritizer_node(state: State, config: Optional[Config] = None) -> State:
                 impact=feature.impact,
                 effort=feature.effort,
                 score=feature.score,
-                rationale=enhanced_rationale
+                rationale=enhanced_rationale,
+                feasibility=feature.feasibility,
+                risk_factor=feature.risk_factor,
+                delivery_confidence=feature.delivery_confidence
             )
             enhanced_features.append(enhanced_feature)
         
