@@ -839,7 +839,7 @@ mv .env.backup .env
 | `llm_utils.py` | LLM Interface | Created universal LLM function with multi-provider support |
 | `agents_feasibility.py` | Risk Agent | **NEW FILE** - Main FeasibilityAgent implementation |
 | `graph.py` | Workflow | Fixed conflicting edges, added feasibility node |
-| `nodes.py` | Processing | Added feasibility node, fixed scoring variables, integrated risk penalty |
+| `nodes.py` | Processing | Added feasibility node, fixed scoring variables, integrated risk penalty, **fixed prioritizer to preserve risk fields** |
 | `monitoring.py` | Logging | Added missing log_event method |
 
 ### **Before vs After**:
@@ -873,24 +873,49 @@ mv .env.backup .env
 ### **Issue 6**: "No OpenAI API key found"
 **Solution**: Ensure Step 3 (.env file) is completed with your real API key
 
-### **Issue 7**: Feasibility fields are empty
-**Solution**: Ensure Step 4 config changes are applied (llm_enabled=True)
+### **Issue 7**: Feasibility fields are empty in output
+**Problem**: Risk assessment working correctly but final JSON/CSV output shows `null` values for `feasibility`, `risk_factor`, and `delivery_confidence` fields.
+
+**Root Cause**: The prioritizer node was creating new `ScoredFeature` objects but wasn't carrying over the risk assessment fields from the enriched features.
+
+**Solution**: Update the prioritizer node to preserve risk assessment fields.
+
+**File to edit**: `nodes.py`
+
+**Find this code** (around line 507):
+```python
+# Create new feature with enhanced rationale
+enhanced_feature = ScoredFeature(
+    name=feature.name,
+    impact=feature.impact,
+    effort=feature.effort,
+    score=feature.score,
+    rationale=enhanced_rationale
+)
+```
+
+**Replace it with**:
+```python
+# Create new feature with enhanced rationale
+enhanced_feature = ScoredFeature(
+    name=feature.name,
+    impact=feature.impact,
+    effort=feature.effort,
+    score=feature.score,
+    rationale=enhanced_rationale,
+    feasibility=feature.feasibility,
+    risk_factor=feature.risk_factor,
+    delivery_confidence=feature.delivery_confidence
+)
+```
+
+**Why this fix**: This ensures that the risk assessment fields calculated by the FeasibilityAgent are preserved through the final processing step and appear in the output files.
+
+### **Issue 8**: "No OpenAI API key found"
 
 ---
 
 ## **Success Checklist**
-
-- [ ] Repository cloned and on v2 branch
-- [ ] `.env` file created with your API key
-- [ ] All 8 code files modified as described
-- [ ] Test command runs without errors
-- [ ] Output files contain actual feature data (not empty)
-- [ ] Risk assessment shows in the output
-- [ ] Fallback mode works without API key
-
-**When complete**: You'll have a working system that intelligently assesses feature delivery risk and incorporates that into prioritization decisions, helping your team make better-informed feature planning choices.
-
----
 
 ## **Configuration Options**
 
@@ -965,6 +990,46 @@ print(f'   delivery_confidence={result.delivery_confidence}')
 # Test complete pipeline
 python run.py --file samples/features.json --metric RICE --auto-save --verbose
 ```
+
+---
+
+## **🎯 Final Verification: Risk Fields Working**
+
+**After completing all steps, verify the risk assessment fields are properly populated in the output:**
+
+```bash
+# Test with a simple feature to confirm risk fields appear
+python run.py --json '[{"name": "Payment Integration", "description": "Integrate with third-party payment provider", "engineering_hint": 4, "complexity_hint": 4}]' --metric RICE --auto-save
+
+# Check the latest result file
+cat results/prioritization_rice_*.json | tail -15
+```
+
+**Expected Output** (risk fields should be populated, not null):
+```json
+{
+  "prioritized_features": [
+    {
+      "name": "Payment Integration",
+      "impact": 0.7,
+      "effort": 0.735,
+      "score": 0.357,
+      "rationale": "Revenue impact; Engineering heavy; High complexity; Scored using RICE | Risk-adjusted (HighRisk)",
+      "feasibility": "Low",
+      "risk_factor": 1.0,
+      "delivery_confidence": "HighRisk"
+    }
+  ]
+}
+```
+
+**✅ Success Indicators:**
+- `feasibility` shows "Low", "Medium", or "High" (not null)
+- `risk_factor` shows a number between 0.0-1.0 (not null)  
+- `delivery_confidence` shows "Safe", "MediumRisk", or "HighRisk" (not null)
+- `rationale` includes "Risk-adjusted" text
+
+**If risk fields show null**: Double-check that you applied the prioritizer node fix in Issue 7 above.
 
 ---
 
