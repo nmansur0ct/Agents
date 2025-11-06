@@ -21,13 +21,13 @@ git clone https://github.com/nmansur0ct/Agents.git
 cd Agents
 
 # 2. Switch to the correct branch
-git checkout v2
+git checkout
 
 # 3. Navigate to the working directory
 cd feature_prioritizer
 
 # 4. Verify you have the latest code
-git pull origin v2
+git pull origin
 
 # 5. Install dependencies
 pip install -r requirements.txt
