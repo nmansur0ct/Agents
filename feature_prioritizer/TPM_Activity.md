@@ -159,20 +159,59 @@ def feasibility_node(state):
 
 ### **Step 1: Environment Setup**
 
-**Create `.env` file** (choose one option):
+```bash
+# 1. Clone the repository
+git clone https://github.com/nmansur0ct/Agents.git
+cd Agents
 
-```properties
-# Option A: OpenAI (Recommended)
-OPENAI_API_AGENT_KEY=sk-proj-your-actual-openai-key-here
+# 2. Switch to the correct branch
+git checkout
 
-# Option B: Gemini (Alternative)  
-LLMP_KEY=your-gemini-jwt-token-here
+# 3. Navigate to the working directory
+cd feature_prioritizer
 
-# Option C: Both (Auto-detection)
-OPENAI_API_AGENT_KEY=sk-proj-your-openai-key
-LLMP_KEY=your-gemini-token
+# 4. Verify you have the latest code
+git pull origin
+
+# 5. Install dependencies
+pip install -r requirements.txt
 ```
 
+### **Step 2: Verify Current System**
+```bash
+# Test the system works before making changes
+python run.py --file samples/features.json --metric RICE --verbose
+```
+**Create `.env` file** (choose one option):
+
+**File to create**: `.env` (in the `feature_prioritizer` folder)
+
+```bash
+# Create the environment file
+touch .env
+```
+
+**Add this content to `.env`**:
+```properties
+# Feature Prioritization System Configuration
+# Replace the API key with your actual OpenAI key
+
+# OpenAI Configuration (Primary option)
+OPENAI_API_AGENT_KEY=sk-proj-your-actual-openai-api-key-here
+LLM_PROVIDER=openai
+LLM_MODEL=gpt-3.5-turbo
+LLM_TEMPERATURE=0.3
+LLM_MAX_TOKENS=500
+LLM_TIMEOUT=30
+
+# Alternative: Gemini Configuration (if using Google's API)
+# LLMP_KEY=your-gemini-jwt-token-here
+# LLM_PROVIDER=gemini
+
+# System Settings
+MONITORING_ENABLED=true
+LOG_DIRECTORY=logs
+```
 ### **Step 2: Verify System**
 
 ```bash
