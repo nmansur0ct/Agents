@@ -20,19 +20,46 @@ Feature Input → Extract → Feasibility Assessment → Risk-Adjusted Scoring �
 
 ## ** Architecture Overview**
 
-### **Enhanced System with FeasibilityAgent**
+### **🔹 BEFORE: Original System Architecture**
+
+```mermaid
+graph TD
+    A[Feature Input] --> B[LangGraph Workflow Engine]
+    B --> C[Extract Node]
+    B --> E[Scorer Node]
+    B --> F[Prioritizer Node]
+    
+    C --> G[Feature Extraction]
+    E --> I[Basic Scoring]
+    F --> J[Priority Rankings]
+    
+    style E fill:#ffecb3,stroke:#ff8f00,stroke-width:2px
+    style I fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+```
+
+**Original Workflow:** `Feature Input → Extract → Score → Prioritize → Output`
+
+**Limitations:**
+- No risk assessment
+- Scoring based only on business metrics (RICE/MoSCoW)
+- No delivery feasibility consideration
+- Higher chance of overcommitting to risky features
+
+---
+
+### **🔸 AFTER: Enhanced System with FeasibilityAgent**
 
 ```mermaid
 graph TD
     A[Feature Input] --> B[LangGraph Workflow Engine]
     B --> C[Extract Node]
     B --> D[Feasibility Node - NEW]
-    B --> E[Scorer Node]
+    B --> E[Scorer Node - ENHANCED]
     B --> F[Prioritizer Node]
     
     C --> G[Feature Extraction]
-    D --> H[Risk Assessment]
-    E --> I[Risk-Adjusted Scoring]
+    D --> H[🔍 Risk Assessment]
+    E --> I[🎯 Risk-Adjusted Scoring]
     F --> J[Final Priority Rankings]
     
     style D fill:#e1f5fe,stroke:#01579b,stroke-width:3px
@@ -40,13 +67,98 @@ graph TD
     style I fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 ```
 
-### **Key Components Implemented:**
-1. **RiskPolicy Configuration** - Controls risk assessment behavior
-2. **Enhanced Data Models** - Store risk assessment results  
-3. **Universal LLM Interface** - Multi-provider AI support with auto-detection
-4. **FeasibilityAgent** - Core risk assessment logic
-5. **Updated Workflow** - Integrated feasibility assessment into pipeline
-6. **Risk-Aware Scoring** - Applies penalties based on risk factors
+**Enhanced Workflow:** `Feature Input → Extract → Feasibility Assessment → Risk-Adjusted Scoring → Prioritized Output`
+
+### **Key Components Added:**
+1. **🎛️ RiskPolicy Configuration** - Controls risk assessment behavior
+2. **📊 Enhanced Data Models** - Store risk assessment results  
+3. **🤖 Universal LLM Interface** - Multi-provider AI support with auto-detection
+4. **🔍 FeasibilityAgent** - Core risk assessment logic
+5. **⚡ Updated Workflow** - Integrated feasibility assessment into pipeline
+6. **🎯 Risk-Aware Scoring** - Applies penalties based on risk factors
+
+---
+
+### **📈 Sample Output Comparison**
+
+#### **🔹 BEFORE: Without FeasibilityAgent**
+```json
+{
+  "prioritized_features": [
+    {
+      "name": "AI-Powered Recommendation Engine",
+      "impact": 0.8,
+      "effort": 0.9,
+      "score": 0.889,
+      "rationale": "High revenue impact; Complex engineering"
+    },
+    {
+      "name": "User Profile Enhancement", 
+      "impact": 0.6,
+      "effort": 0.3,
+      "score": 2.0,
+      "rationale": "Moderate impact; Low effort"
+    }
+  ]
+}
+```
+
+**Issues with original output:**
+- ❌ AI feature scored high (0.889) despite being very risky
+- ❌ No risk assessment information
+- ❌ Could lead to overcommitment on complex features
+
+---
+
+#### **🔸 AFTER: With FeasibilityAgent**
+```json
+{
+  "prioritized_features": [
+    {
+      "name": "User Profile Enhancement",
+      "impact": 0.6,
+      "effort": 0.3, 
+      "score": 1.9,
+      "rationale": "Moderate impact; Low effort | Risk-adjusted (Safe)",
+      "feasibility": "High",
+      "risk_factor": 0.2,
+      "delivery_confidence": "Safe"
+    },
+    {
+      "name": "AI-Powered Recommendation Engine",
+      "impact": 0.8,
+      "effort": 0.9,
+      "score": 0.445,
+      "rationale": "High revenue impact; Complex engineering | Risk-adjusted (HighRisk)",
+      "feasibility": "Low", 
+      "risk_factor": 0.9,
+      "delivery_confidence": "HighRisk"
+    }
+  ]
+}
+```
+
+**Improvements with FeasibilityAgent:**
+- ✅ AI feature score reduced from 0.889 to 0.445 due to high risk
+- ✅ Safer feature (User Profile) now prioritized higher
+- ✅ Complete risk assessment data for informed decisions
+- ✅ "Risk-adjusted" rationale shows penalty application
+- ✅ Delivery confidence helps sprint planning
+
+---
+
+### **🎯 Risk Impact Analysis**
+
+| Feature Type | Original Score | Risk Factor | Final Score | Impact |
+|-------------|---------------|-------------|-------------|---------|
+| **Simple CRUD** | 1.5 | 0.1 | **1.45** | 3% reduction |
+| **API Integration** | 0.8 | 0.5 | **0.6** | 25% reduction |
+| **AI/ML Feature** | 0.9 | 0.9 | **0.45** | 50% reduction |
+| **Blockchain** | 0.7 | 1.0 | **0.35** | 50% reduction |
+
+**Risk Penalty Formula:** `Final Score = Original Score × (1 - (Risk Penalty × Risk Factor))`
+- Default Risk Penalty = 0.5 (configurable)
+- Risk Factor ranges from 0.0 (safe) to 1.0 (very risky)
 
 ---
 
@@ -740,6 +852,4 @@ python run.py --file samples/features.json --metric RICE --llm --auto-save
 2. **Industry Patterns**: Add domain-specific risk keywords and patterns  
 3. **Historical Learning**: Track actual delivery outcomes to improve risk predictions
 4. **Integration**: Connect with JIRA/Azure DevOps for automated risk assessment
-
----
 
