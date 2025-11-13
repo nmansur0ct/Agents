@@ -771,7 +771,7 @@ enhanced_feature = ScoredFeature(
 
 ### **File 7: `monitoring.py` - Add Event Logging**
 
-**Add this method to AuditTrail class:**
+**Add this method to AuditTrail class (around line 245):**
 ```python
 def log_event(self, agent_name: str, event_type: str, details: Dict[str, Any]):
     """Log a simple event for agent activities."""
