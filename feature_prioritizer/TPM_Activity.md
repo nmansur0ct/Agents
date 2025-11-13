@@ -517,43 +517,81 @@ class FeasibilityAgent:
             return self._analyze_deterministic(spec)
     
     def _analyze_deterministic(self, spec: FeatureSpec) -> Dict[str, Any]:
-        """Deterministic analysis using keywords and complexity scores."""
+        """Enhanced deterministic analysis using keywords, complexity scores, and feature characteristics."""
         print(f"Using deterministic analysis for {spec.name}")
         
-        # Risk keywords detection
-        high_risk_keywords = ['ai', 'machine learning', 'blockchain', 'real-time', 'integration', 'api', 'third-party']
-        medium_risk_keywords = ['database', 'authentication', 'payment', 'security', 'performance']
+        # Enhanced risk keywords detection with different weights
+        very_high_risk_keywords = ['blockchain', 'machine learning', 'ai', 'real-time streaming', 'microservices migration']
+        high_risk_keywords = ['real-time', 'integration', 'api', 'third-party', 'migration', 'refactor', 'infrastructure']
+        medium_risk_keywords = ['database', 'authentication', 'payment', 'security', 'performance', 'search', 'analytics']
+        low_risk_keywords = ['ui', 'frontend', 'styling', 'content', 'text', 'display', 'simple']
         
-        notes_text = ' '.join(spec.notes).lower()
+        notes_text = ' '.join(spec.notes + [spec.name]).lower()
         
-        # Calculate base risk from complexity factors
-        complexity_risk = (spec.engineering + spec.dependency + spec.complexity) / 3
+        # Calculate base risk from complexity factors with weighted importance
+        engineering_weight = 0.4  # Engineering effort is most important
+        complexity_weight = 0.35  # Implementation complexity is second
+        dependency_weight = 0.25  # Dependencies are third
         
-        # Adjust risk based on keywords
+        complexity_risk = (
+            spec.engineering * engineering_weight +
+            spec.complexity * complexity_weight +
+            spec.dependency * dependency_weight
+        )
+        
+        # Adjust risk based on keywords with more granular detection
         keyword_risk = 0.0
-        if any(keyword in notes_text for keyword in high_risk_keywords):
-            keyword_risk = 0.3
+        keyword_matches = []
+        
+        if any(keyword in notes_text for keyword in very_high_risk_keywords):
+            keyword_risk = 0.4
+            keyword_matches = [kw for kw in very_high_risk_keywords if kw in notes_text]
+        elif any(keyword in notes_text for keyword in high_risk_keywords):
+            keyword_risk = 0.25
+            keyword_matches = [kw for kw in high_risk_keywords if kw in notes_text]
         elif any(keyword in notes_text for keyword in medium_risk_keywords):
             keyword_risk = 0.15
+            keyword_matches = [kw for kw in medium_risk_keywords if kw in notes_text]
+        elif any(keyword in notes_text for keyword in low_risk_keywords):
+            keyword_risk = -0.1  # Reduce risk for simple features
+            keyword_matches = [kw for kw in low_risk_keywords if kw in notes_text]
         
-        final_risk = min(1.0, complexity_risk + keyword_risk)
+        # Additional risk factors
+        name_length_risk = min(0.1, len(spec.name.split()) * 0.02)  # Longer names often indicate complexity
         
-        # Determine feasibility and confidence
-        if final_risk <= 0.3:
+        # Calculate final risk with bounds
+        raw_risk = complexity_risk + keyword_risk + name_length_risk
+        final_risk = max(0.05, min(0.95, raw_risk))  # Keep between 0.05-0.95 for realistic variance
+        
+        # Determine feasibility and confidence with more granular thresholds
+        if final_risk <= 0.25:
             feasibility = "High"
             confidence = "Safe"
-        elif final_risk <= 0.6:
+        elif final_risk <= 0.45:
+            feasibility = "High"
+            confidence = "MediumRisk"
+        elif final_risk <= 0.65:
             feasibility = "Medium"
+            confidence = "MediumRisk"
+        elif final_risk <= 0.8:
+            feasibility = "Low"
             confidence = "MediumRisk"
         else:
             feasibility = "Low"
             confidence = "HighRisk"
         
+        # Enhanced reasoning with more detail
+        reasoning_parts = [f"complexity={complexity_risk:.2f}", f"keywords={keyword_risk:.2f}"]
+        if keyword_matches:
+            reasoning_parts.append(f"matched: {', '.join(keyword_matches[:3])}")
+        if name_length_risk > 0:
+            reasoning_parts.append(f"name_complexity={name_length_risk:.2f}")
+        
         return {
             "feasibility": feasibility,
             "risk_factor": final_risk,
             "delivery_confidence": confidence,
-            "reasoning": f"Deterministic analysis: complexity={complexity_risk:.2f}, keywords={keyword_risk:.2f}"
+            "reasoning": f"Deterministic analysis: {', '.join(reasoning_parts)}"
         }
     
     def assess_feature(self, spec: FeatureSpec) -> FeatureSpec:
@@ -618,21 +656,41 @@ class FeasibilityAgent:
             except Exception as e:
                 print(f"❌ Error assessing {spec.name}: {str(e)}")
                 errors.append(f"FeasibilityAgent error for {spec.name}: {str(e)}")
-                # Add original spec with default risk values
-                default_spec = FeatureSpec(
-                    name=spec.name,
-                    reach=spec.reach,
-                    revenue=spec.revenue,
-                    risk_reduction=spec.risk_reduction,
-                    engineering=spec.engineering,
-                    dependency=spec.dependency,
-                    complexity=spec.complexity,
-                    notes=spec.notes,
-                    feasibility="Medium",
-                    risk_factor=0.5,
-                    delivery_confidence="MediumRisk"
-                )
-                enriched_specs.append(default_spec)
+                # Fall back to deterministic analysis instead of hardcoded values
+                try:
+                    fallback_analysis = self._analyze_deterministic(spec)
+                    fallback_spec = FeatureSpec(
+                        name=spec.name,
+                        reach=spec.reach,
+                        revenue=spec.revenue,
+                        risk_reduction=spec.risk_reduction,
+                        engineering=spec.engineering,
+                        dependency=spec.dependency,
+                        complexity=spec.complexity,
+                        notes=spec.notes + [f"Fallback analysis due to error: {str(e)}"],
+                        feasibility=fallback_analysis["feasibility"],
+                        risk_factor=fallback_analysis["risk_factor"],
+                        delivery_confidence=fallback_analysis["delivery_confidence"]
+                    )
+                    enriched_specs.append(fallback_spec)
+                except Exception as fallback_error:
+                    print(f"❌❌ Fallback analysis also failed for {spec.name}: {str(fallback_error)}")
+                    # Only use hardcoded values as last resort
+                    emergency_risk = max(0.3, min(0.7, (spec.engineering + spec.dependency + spec.complexity) / 3))
+                    emergency_spec = FeatureSpec(
+                        name=spec.name,
+                        reach=spec.reach,
+                        revenue=spec.revenue,
+                        risk_reduction=spec.risk_reduction,
+                        engineering=spec.engineering,
+                        dependency=spec.dependency,
+                        complexity=spec.complexity,
+                        notes=spec.notes + ["Emergency fallback: both LLM and deterministic analysis failed"],
+                        feasibility="Medium" if emergency_risk <= 0.5 else "Low",
+                        risk_factor=emergency_risk,
+                        delivery_confidence="MediumRisk" if emergency_risk <= 0.5 else "HighRisk"
+                    )
+                    enriched_specs.append(emergency_spec)
         
         print(f"FeasibilityAgent.enrich completed - processed {len(enriched_specs)} features")
         return enriched_specs
