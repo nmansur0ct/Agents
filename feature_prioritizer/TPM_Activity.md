@@ -260,16 +260,22 @@ def feasibility_node(state):
 git clone https://github.com/nmansur0ct/Agents.git
 cd Agents
 
-# 2. Switch to the correct branch
-git checkout
+# 2. Fetch all latest branches and updates from remote
+git fetch --all
 
-# 3. Navigate to the working directory
-cd feature_prioritizer
+# 3. Switch to the v2 branch (create local if needed)
+git checkout v2 || git checkout -b v2 origin/v2
 
-# 4. Verify you have the latest code
-git pull origin
+# 4. Discard all local changes and reset to match remote v2 branch exactly
+git reset --hard origin/v2
 
-# 5. Install dependencies
+# 5. Clean up any untracked files or directories (optional but recommended)
+git clean -fd
+
+# 6. Verify status — it should show "nothing to commit, working tree clean"
+git status
+
+# 7. Install dependencies
 pip install -r requirements.txt
 ```
 
