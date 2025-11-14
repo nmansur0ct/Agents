@@ -314,20 +314,10 @@ LLM_TIMEOUT=30
 MONITORING_ENABLED=true
 LOG_DIRECTORY=logs
 ```
-### **Step 2: Verify System**
-
-```bash
-# Test current system
-cd feature_prioritizer
-python run.py --file samples/features.json --metric RICE --verbose
-
-# Test LLM connectivity (optional)
-python -c "from llm_utils import call_llm_json; result, error = call_llm_json('Test'); print(' LLM Ready' if not error else f'⚠️ {error}')"
-```
 
 ---
 
-## **💻 All Code Changes in One Place**
+## ** All Code Changes in One Place**
 
 ### **File 1: `config.py` - Add RiskPolicy**
 
