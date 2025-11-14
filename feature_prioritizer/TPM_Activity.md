@@ -70,18 +70,18 @@ graph TD
 **Enhanced Workflow:** `Feature Input → Extract → Feasibility Assessment → Risk-Adjusted Scoring → Prioritized Output`
 
 ### **Key Components Added:**
-1. **🎛️ RiskPolicy Configuration** - Controls risk assessment behavior
-2. **📊 Enhanced Data Models** - Store risk assessment results  
-3. **🤖 Universal LLM Interface** - Multi-provider AI support with auto-detection
-4. **🔍 FeasibilityAgent** - Core risk assessment logic
-5. **⚡ Updated Workflow** - Integrated feasibility assessment into pipeline
-6. **🎯 Risk-Aware Scoring** - Applies penalties based on risk factors
+1. ** RiskPolicy Configuration** - Controls risk assessment behavior
+2. ** Enhanced Data Models** - Store risk assessment results  
+3. ** Universal LLM Interface** - Multi-provider AI support with auto-detection
+4. ** FeasibilityAgent** - Core risk assessment logic
+5. ** Updated Workflow** - Integrated feasibility assessment into pipeline
+6. ** Risk-Aware Scoring** - Applies penalties based on risk factors
 
 ---
 
-### **📈 Sample Output Comparison**
+### ** Sample Output Comparison**
 
-#### **🔹 BEFORE: Without FeasibilityAgent**
+#### ** BEFORE: Without FeasibilityAgent**
 ```json
 {
   "prioritized_features": [
@@ -110,7 +110,7 @@ graph TD
 
 ---
 
-#### **🔸 AFTER: With FeasibilityAgent**
+#### ** AFTER: With FeasibilityAgent**
 ```json
 {
   "prioritized_features": [
