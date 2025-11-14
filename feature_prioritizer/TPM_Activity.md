@@ -1,35 +1,281 @@
 # **TPM Implementation Guide: Adding FeasibilityAgent for Risk Assessment**
 
-## **🎯 What This Guide Covers**
+## ** Overview**
 
-This guide helps Technical Program Managers (TPMs) implement a new **FeasibilityAgent** that adds intelligent risk assessment to the feature prioritization system. The agent evaluates each feature's delivery risk and applies penalties to scores based on complexity and implementation challenges.
+This guide helps Technical Program Managers (TPMs) implement the **FeasibilityAgent** that adds intelligent risk assessment to the feature prioritization system. The agent evaluates each feature's delivery risk and applies penalties to scores based on complexity and implementation challenges.
 
-**What You'll Add:**
-- **Risk Assessment**: Automatic evaluation of feature delivery risk
-- **Smart Scoring**: Risk penalties applied to final priority scores
-- **Fallback Safety**: System works even without AI/LLM connectivity
-- **Better Decisions**: More accurate prioritization with risk considerations
+
+### **What the FeasibilityAgent Adds:**
+-  **Risk Assessment**: Automatic evaluation of feature delivery risk
+-  **Smart Scoring**: Risk penalties applied to final priority scores  
+-  **Fallback Safety**: System works even without AI/LLM connectivity
+-  **Better Decisions**: More accurate prioritization with risk considerations
+
+### **System Workflow:**
+```
+Feature Input → Extract → Feasibility Assessment → Risk-Adjusted Scoring → Prioritized Output
+```
 
 ---
 
-## **🔧 Prerequisites & Setup**
+## ** Architecture Overview**
 
-### **Step 1: Repository Checkout**
+### **🔹 BEFORE: Original System Architecture**
+
+```mermaid
+graph TD
+    A[Feature Input] --> B[LangGraph Workflow Engine]
+    B --> C[Extract Node]
+    B --> E[Scorer Node]
+    B --> F[Prioritizer Node]
+    
+    C --> G[Feature Extraction]
+    E --> I[Basic Scoring]
+    F --> J[Priority Rankings]
+    
+    style E fill:#ffecb3,stroke:#ff8f00,stroke-width:2px
+    style I fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+```
+
+**Original Workflow:** `Feature Input → Extract → Score → Prioritize → Output`
+
+**Limitations:**
+- No risk assessment
+- Scoring based only on business metrics (RICE/MoSCoW)
+- No delivery feasibility consideration
+- Higher chance of overcommitting to risky features
+
+---
+
+### **🔸 AFTER: Enhanced System with FeasibilityAgent**
+
+```mermaid
+graph TD
+    A[Feature Input] --> B[LangGraph Workflow Engine]
+    B --> C[Extract Node]
+    B --> D[Feasibility Node - NEW]
+    B --> E[Scorer Node - ENHANCED]
+    B --> F[Prioritizer Node]
+    
+    C --> G[Feature Extraction]
+    D --> H[🔍 Risk Assessment]
+    E --> I[🎯 Risk-Adjusted Scoring]
+    F --> J[Final Priority Rankings]
+    
+    style D fill:#e1f5fe,stroke:#01579b,stroke-width:3px
+    style H fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    style I fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+```
+
+**Enhanced Workflow:** `Feature Input → Extract → Feasibility Assessment → Risk-Adjusted Scoring → Prioritized Output`
+
+### **Key Components Added:**
+1. **🎛️ RiskPolicy Configuration** - Controls risk assessment behavior
+2. **📊 Enhanced Data Models** - Store risk assessment results  
+3. **🤖 Universal LLM Interface** - Multi-provider AI support with auto-detection
+4. **🔍 FeasibilityAgent** - Core risk assessment logic
+5. **⚡ Updated Workflow** - Integrated feasibility assessment into pipeline
+6. **🎯 Risk-Aware Scoring** - Applies penalties based on risk factors
+
+---
+
+### **📈 Sample Output Comparison**
+
+#### **🔹 BEFORE: Without FeasibilityAgent**
+```json
+{
+  "prioritized_features": [
+    {
+      "name": "AI-Powered Recommendation Engine",
+      "impact": 0.8,
+      "effort": 0.9,
+      "score": 0.889,
+      "rationale": "High revenue impact; Complex engineering"
+    },
+    {
+      "name": "User Profile Enhancement", 
+      "impact": 0.6,
+      "effort": 0.3,
+      "score": 2.0,
+      "rationale": "Moderate impact; Low effort"
+    }
+  ]
+}
+```
+
+**Issues with original output:**
+- ❌ AI feature scored high (0.889) despite being very risky
+- ❌ No risk assessment information
+- ❌ Could lead to overcommitment on complex features
+
+---
+
+#### **🔸 AFTER: With FeasibilityAgent**
+```json
+{
+  "prioritized_features": [
+    {
+      "name": "User Profile Enhancement",
+      "impact": 0.6,
+      "effort": 0.3, 
+      "score": 1.9,
+      "rationale": "Moderate impact; Low effort | Risk-adjusted (Safe)",
+      "feasibility": "High",
+      "risk_factor": 0.2,
+      "delivery_confidence": "Safe"
+    },
+    {
+      "name": "AI-Powered Recommendation Engine",
+      "impact": 0.8,
+      "effort": 0.9,
+      "score": 0.445,
+      "rationale": "High revenue impact; Complex engineering | Risk-adjusted (HighRisk)",
+      "feasibility": "Low", 
+      "risk_factor": 0.9,
+      "delivery_confidence": "HighRisk"
+    }
+  ]
+}
+```
+
+**Improvements with FeasibilityAgent:**
+- ✅ AI feature score reduced from 0.889 to 0.445 due to high risk
+- ✅ Safer feature (User Profile) now prioritized higher
+- ✅ Complete risk assessment data for informed decisions
+- ✅ "Risk-adjusted" rationale shows penalty application
+- ✅ Delivery confidence helps sprint planning
+
+---
+
+### **🎯 Risk Impact Analysis**
+
+| Feature Type | Original Score | Risk Factor | Final Score | Impact |
+|-------------|---------------|-------------|-------------|---------|
+| **Simple CRUD** | 1.5 | 0.1 | **1.45** | 3% reduction |
+| **API Integration** | 0.8 | 0.5 | **0.6** | 25% reduction |
+| **AI/ML Feature** | 0.9 | 0.9 | **0.45** | 50% reduction |
+| **Blockchain** | 0.7 | 1.0 | **0.35** | 50% reduction |
+
+**Risk Penalty Formula:** `Final Score = Original Score × (1 - (Risk Penalty × Risk Factor))`
+- Default Risk Penalty = 0.5 (configurable)
+- Risk Factor ranges from 0.0 (safe) to 1.0 (very risky)
+
+---
+
+## **Why LangGraph: Technical Decision Analysis**
+
+### **LangGraph vs LangChain: Quick Comparison**
+
+| Aspect | LangChain | LangGraph | Our Choice |
+|--------|-----------|-----------|------------|
+| **Purpose** | General LLM framework | Stateful workflow orchestration | LangGraph |
+| **Workflow Control** | Linear chains | Graph-based nodes with state | LangGraph |
+| **State Management** | Manual state passing | Built-in state persistence | LangGraph |
+| **Error Handling** | Basic try/catch | Node-level error recovery | LangGraph |
+| **Debugging** | Limited visibility | Full execution tracing | LangGraph |
+| **Scalability** | Chain complexity grows | Modular node architecture | LangGraph |
+| **Testing** | Test entire chains | Test individual nodes | LangGraph |
+
+### **Why We Chose LangGraph**
+
+**Workflow Requirements:**
+- Multi-step feature processing pipeline
+- State persistence between processing stages
+- Conditional logic based on risk assessment results
+- Error recovery at individual processing steps
+- Ability to extend with new processing nodes
+
+**LangGraph Advantages for Our Use Case:**
+
+**State-Driven Processing:**
+```python
+# LangGraph: Built-in state management
+workflow_state = {
+    "features": [...],
+    "risk_assessments": [...],
+    "scores": [...]
+}
+# State automatically flows between nodes
+```
+
+**Node-Based Architecture:**
+```python
+# Each processing step is an independent, testable node
+workflow.add_node("extract", extractor_node)
+workflow.add_node("feasibility", feasibility_node) 
+workflow.add_node("score", scorer_node)
+workflow.add_node("prioritize", prioritizer_node)
+```
+
+**Conditional Flows:**
+```python
+# LangGraph: Easy conditional routing
+workflow.add_conditional_edges(
+    "feasibility",
+    lambda x: "score" if x["risk_factor"] < 0.8 else "manual_review"
+)
+```
+
+**Error Recovery:**
+```python
+# LangGraph: Node-level error handling
+def feasibility_node(state):
+    try:
+        return assess_risk(state)
+    except LLMError:
+        return fallback_assessment(state)  # Graceful degradation
+```
+
+### **Implementation Benefits Realized**
+
+**Modularity:** Each processing step (extract, assess, score, prioritize) is an independent node that can be:
+- Tested in isolation
+- Modified without affecting other steps
+- Reused in different workflows
+- Debugged with full state visibility
+
+**Maintainability:** Adding new features like risk assessment required:
+- Creating one new node (feasibility_node)
+- Adding state flow edges
+- No changes to existing node logic
+
+**Reliability:** Built-in state management ensures:
+- No data loss between processing steps
+- Automatic error recovery with fallback options
+- Full execution traceability for debugging
+
+**Performance:** Graph compilation optimizes:
+- Node execution order
+- State transitions
+- Memory usage during processing
+
+---
+
+## ** Implementation Steps**
+
+### **Step 1: Environment Setup**
+
 ```bash
 # 1. Clone the repository
 git clone https://github.com/nmansur0ct/Agents.git
 cd Agents
 
-# 2. Switch to the correct branch
-git checkout
+# 2. Fetch all latest branches and updates from remote
+git fetch --all
 
-# 3. Navigate to the working directory
-cd feature_prioritizer
+# 3. Switch to the v2 branch (create local if needed)
+git checkout v2 || git checkout -b v2 origin/v2
 
-# 4. Verify you have the latest code
-git pull origin
+# 4. Discard all local changes and reset to match remote v2 branch exactly
+git reset --hard origin/v2
 
-# 5. Install dependencies
+# 5. Clean up any untracked files or directories (optional but recommended)
+git clean -fd
+
+# 6. Verify status — it should show "nothing to commit, working tree clean"
+git status
+
+# 7. Install dependencies
 pip install -r requirements.txt
 ```
 
@@ -38,16 +284,7 @@ pip install -r requirements.txt
 # Test the system works before making changes
 python run.py --file samples/features.json --metric RICE --verbose
 ```
-
-**Expected Output**: Should show feature processing but may have errors - we'll fix these.
-
----
-
-## **📝 Implementation Steps (All Fixes Included)**
-
-### **Step 3: Create Environment Configuration**
-
-**What we're doing**: Setting up API keys and system configuration for the FeasibilityAgent to work properly.
+**Create `.env` file** (choose one option):
 
 **File to create**: `.env` (in the `feature_prioritizer` folder)
 
@@ -77,18 +314,25 @@ LLM_TIMEOUT=30
 MONITORING_ENABLED=true
 LOG_DIRECTORY=logs
 ```
+### **Step 2: Verify System**
 
-**⚠️ Important**: Replace `sk-proj-your-actual-openai-api-key-here` with your real OpenAI API key.
+```bash
+# Test current system
+cd feature_prioritizer
+python run.py --file samples/features.json --metric RICE --verbose
+
+# Test LLM connectivity (optional)
+python -c "from llm_utils import call_llm_json; result, error = call_llm_json('Test'); print(' LLM Ready' if not error else f'⚠️ {error}')"
+```
 
 ---
 
-### **Step 4: Fix Configuration Defaults**
+## **💻 All Code Changes in One Place**
 
-**What we're doing**: Ensuring the system has proper default settings so the FeasibilityAgent can work correctly.
+### **File 1: `config.py` - Add RiskPolicy**
 
-**File to edit**: `config.py`
+**Add after the imports (around line 9):**
 
-**Action 1**: Add RiskPolicy class after imports (around line 8):
 ```python
 class RiskPolicy(BaseModel):
     """Risk assessment configuration for feasibility validation."""
@@ -97,59 +341,49 @@ class RiskPolicy(BaseModel):
     use_llm_analysis: bool = Field(default=True, description="Use LLM for risk analysis")
 ```
 
-**Action 2**: Find this line (around line 28):
+**In Config class, change this line:**
 ```python
-    llm_enabled: bool = Field(default=False, description="Enable LLM enhancements for factor analysis and rationale generation")
+# FIND:
+llm_enabled: bool = Field(default=False, description="Enable LLM enhancements...")
+
+# REPLACE WITH:
+llm_enabled: bool = Field(default=True, description="Enable LLM enhancements for factor analysis and rationale generation")
 ```
 
-**Replace it with**:
+**In Config class, add after monitoring field:**
 ```python
-    llm_enabled: bool = Field(default=True, description="Enable LLM enhancements for factor analysis and rationale generation")
+# Risk assessment configuration
+risk: RiskPolicy = Field(default_factory=lambda: RiskPolicy(), description="Risk assessment configuration")
 ```
-
-**Action 3**: Add to Config class after the monitoring field:
-```python
-    # Risk assessment configuration
-    risk: RiskPolicy = Field(default_factory=lambda: RiskPolicy(), description="Risk assessment configuration")
-```
-
-**Why this change**: Changed the default from `False` to `True` so the system automatically uses AI enhancement when available, with fallback to deterministic mode when needed.
 
 ---
 
-### **Step 5: Add Risk Fields to Data Models**
+### **File 2: `models.py` - Add Risk Assessment Fields**
 
-**What we're doing**: Adding risk assessment fields to the data models so they can store feasibility and risk information.
+**In FeatureSpec class, add after `notes` field:**
 
-**File to edit**: `models.py`
-
-**Action 1**: In FeatureSpec class, after the `notes` field:
 ```python
-    # Risk assessment fields - CRITICAL for output population
-    feasibility: Optional[str] = Field(None, description="Implementation feasibility: Low|Medium|High")
-    risk_factor: Optional[float] = Field(0.4, ge=0, le=1, description="Risk factor (0=safe, 1=risky)")
-    delivery_confidence: Optional[str] = Field(None, description="Confidence: Safe|MediumRisk|HighRisk")
+# Risk assessment fields - CRITICAL for output population
+feasibility: Optional[str] = Field(None, description="Implementation feasibility: Low|Medium|High")
+risk_factor: Optional[float] = Field(0.4, ge=0, le=1, description="Risk factor (0=safe, 1=risky)")
+delivery_confidence: Optional[str] = Field(None, description="Confidence: Safe|MediumRisk|HighRisk")
 ```
 
-**Action 2**: In ScoredFeature class, after the `rationale` field:
-```python
-    # Risk assessment fields (carried from FeatureSpec) - CRITICAL for CSV output
-    feasibility: Optional[str] = Field(None, description="Implementation feasibility: Low|Medium|High")
-    risk_factor: Optional[float] = Field(None, ge=0, le=1, description="Risk factor (0=safe, 1=risky)")
-    delivery_confidence: Optional[str] = Field(None, description="Confidence: Safe|MediumRisk|HighRisk")
-```
+**In ScoredFeature class, add after `rationale` field:**
 
-**Why this change**: These fields store the risk assessment data that the FeasibilityAgent will populate.
+```python
+# Risk assessment fields (carried from FeatureSpec) - CRITICAL for CSV output
+feasibility: Optional[str] = Field(None, description="Implementation feasibility: Low|Medium|High")
+risk_factor: Optional[float] = Field(None, ge=0, le=1, description="Risk factor (0=safe, 1=risky)")
+delivery_confidence: Optional[str] = Field(None, description="Confidence: Safe|MediumRisk|HighRisk")
+```
 
 ---
 
-### **Step 6: Create Enhanced LLM Utility**
+### **File 3: `llm_utils.py` - Add Universal LLM Function**
 
-**What we're doing**: Creating a universal LLM interface that supports multiple AI providers with proper error handling.
+**Add this complete function (after existing imports):**
 
-**File to create or replace**: `llm_utils.py`
-
-**Add this function**:
 ```python
 def call_llm_json(prompt: str, model: str = "gpt-3.5-turbo", 
                   temperature: float = 0.3, provider: str = "auto") -> Tuple[Optional[Dict], Optional[str]]:
@@ -176,7 +410,7 @@ def call_llm_json(prompt: str, model: str = "gpt-3.5-turbo",
             # Use LLPM gateway for Gemini
             url = "https://llpm.gateway.ai/v1/chat/completions"
             headers = {
-                "Authorization": f"Bearer {os.getenv('LLMP_KEY')}",
+                "Authorization": f"Bearer {os.getenv('LLPM_KEY')}",
                 "Content-Type": "application/json"
             }
             data = {
@@ -191,16 +425,18 @@ def call_llm_json(prompt: str, model: str = "gpt-3.5-turbo",
             
         elif provider == "openai":
             # Use OpenAI directly
-            import openai
-            openai.api_key = os.getenv("OPENAI_API_AGENT_KEY")
+            from openai import OpenAI
+            client = OpenAI(api_key=os.getenv("OPENAI_API_AGENT_KEY"))
             
-            response = openai.ChatCompletion.create(
+            response = client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=temperature,
                 max_tokens=500
             )
             content = response.choices[0].message.content
+            if content is None:
+                return None, "Received empty response from OpenAI"
             return json.loads(content), None
             
         else:
@@ -209,29 +445,26 @@ def call_llm_json(prompt: str, model: str = "gpt-3.5-turbo",
     except json.JSONDecodeError as e:
         return None, f"JSON decode error: {str(e)}"
     except requests.exceptions.RequestException as e:
-        return None, f"Connection error."
+        return None, f"Connection error: {str(e)}"
     except Exception as e:
         return None, f"Unexpected error: {str(e)}"
 ```
 
-**Why this change**: Provides universal LLM support with automatic provider detection and proper error handling.
-
 ---
 
-### **Step 7: Create FeasibilityAgent**
+### **File 4: `agents_feasibility.py` - Create New File**
 
-**What we're doing**: Creating the main FeasibilityAgent that performs risk assessment using both AI and deterministic methods.
-
-**File to create**: `agents_feasibility.py`
+**Create this complete new file:**
 
 ```python
 """
 FeasibilityAgent - AI-Enhanced Risk Assessment Module
 Supports both LLM-enhanced analysis and deterministic fallback
 """
+
 from typing import List, Dict, Any, Optional
-from config import Config
 from models import FeatureSpec
+from config import Config
 from llm_utils import call_llm_json
 from monitoring import get_system_monitor
 
@@ -241,97 +474,129 @@ class FeasibilityAgent:
         self.monitor = get_system_monitor() if config.monitoring.enabled else None
     
     def _analyze_with_llm(self, spec: FeatureSpec) -> Dict[str, Any]:
-        """Use LLM to analyze feasibility and risk factors with enhanced error handling."""
+        """Use LLM to analyze feasibility and risk factors."""
         if not self.config.llm_enabled or not self.config.risk.use_llm_analysis:
-            print(f"🔄 LLM disabled, using deterministic analysis for {spec.name}")
+            print(f"LLM disabled, using deterministic analysis for {spec.name}")
             return self._analyze_deterministic(spec)
         
         prompt = f"""
-Analyze the implementation feasibility and delivery risk for this feature:
+            Analyze the implementation feasibility and delivery risk for this feature:
 
-Feature Name: {spec.name}
-Engineering Effort: {spec.engineering:.2f} (0=low, 1=high)
-Dependency Complexity: {spec.dependency:.2f} (0=low, 1=high)
-Implementation Complexity: {spec.complexity:.2f} (0=low, 1=high)
-Notes: {' | '.join(spec.notes)}
+            Feature Name: {spec.name}
+            Engineering Effort: {spec.engineering:.2f} (0=low, 1=high)
+            Dependency Complexity: {spec.dependency:.2f} (0=low, 1=high)
+            Implementation Complexity: {spec.complexity:.2f} (0=low, 1=high)
+            Notes: {' | '.join(spec.notes)}
 
-Assess:
-1. Implementation feasibility (Low/Medium/High)
-2. Risk factor (0.0-1.0, where 0=safe, 1=very risky)  
-3. Delivery confidence (Safe/MediumRisk/HighRisk)
+            Assess:
+            1. Implementation feasibility (Low/Medium/High)
+            2. Risk factor (0.0-1.0, where 0=safe, 1=very risky)  
+            3. Delivery confidence (Safe/MediumRisk/HighRisk)
 
-Consider: technical complexity, external dependencies, unknowns, potential blockers.
-
-Please respond with valid JSON format:
-{{{{
-  "feasibility": "High",
-  "risk_factor": 0.3,
-  "delivery_confidence": "Safe",
-  "reasoning": "explanation here"
-}}}}
+            Please respond with valid JSON format:
+            {{
+            "feasibility": "High",
+            "risk_factor": 0.3,
+            "delivery_confidence": "Safe",
+            "reasoning": "explanation here"
+            }}
         """
         
         try:
-            # Use universal LLM function with auto-detection
             result, error = call_llm_json(prompt, model=self.config.llm_model, temperature=self.config.llm_temperature)
             
             if error or not result:
-                print(f"⚠️ LLM failed for {spec.name}: {error}")
+                print(f"LLM failed for {spec.name}: {error}")
                 return self._analyze_deterministic(spec)
             
-            print(f"✅ LLM analysis complete for {spec.name}: {result.get('feasibility', 'Unknown')}")
+            print(f"LLM analysis complete for {spec.name}: {result.get('feasibility', 'Unknown')}")
             return result
             
         except Exception as e:
-            print(f"⚠️ LLM error for {spec.name}: {str(e)}")
+            print(f"LLM error for {spec.name}: {str(e)}")
             return self._analyze_deterministic(spec)
     
     def _analyze_deterministic(self, spec: FeatureSpec) -> Dict[str, Any]:
-        """Enhanced deterministic analysis using keywords and complexity scores."""
-        print(f"🔧 Using deterministic analysis for {spec.name}")
+        """Enhanced deterministic analysis using keywords, complexity scores, and feature characteristics."""
+        print(f"Using deterministic analysis for {spec.name}")
         
-        # Risk keywords detection
-        high_risk_keywords = ['ai', 'machine learning', 'blockchain', 'real-time', 'integration', 'api', 'third-party']
-        medium_risk_keywords = ['database', 'authentication', 'payment', 'security', 'performance']
+        # Enhanced risk keywords detection with different weights
+        very_high_risk_keywords = ['blockchain', 'machine learning', 'ai', 'real-time streaming', 'microservices migration']
+        high_risk_keywords = ['real-time', 'integration', 'api', 'third-party', 'migration', 'refactor', 'infrastructure']
+        medium_risk_keywords = ['database', 'authentication', 'payment', 'security', 'performance', 'search', 'analytics']
+        low_risk_keywords = ['ui', 'frontend', 'styling', 'content', 'text', 'display', 'simple']
         
-        notes_text = ' '.join(spec.notes).lower()
+        notes_text = ' '.join(spec.notes + [spec.name]).lower()
         
-        # Calculate base risk from complexity factors
-        complexity_risk = (spec.engineering + spec.dependency + spec.complexity) / 3
+        # Calculate base risk from complexity factors with weighted importance
+        engineering_weight = 0.4  # Engineering effort is most important
+        complexity_weight = 0.35  # Implementation complexity is second
+        dependency_weight = 0.25  # Dependencies are third
         
-        # Adjust risk based on keywords
+        complexity_risk = (
+            spec.engineering * engineering_weight +
+            spec.complexity * complexity_weight +
+            spec.dependency * dependency_weight
+        )
+        
+        # Adjust risk based on keywords with more granular detection
         keyword_risk = 0.0
-        if any(keyword in notes_text for keyword in high_risk_keywords):
-            keyword_risk = 0.3
+        keyword_matches = []
+        
+        if any(keyword in notes_text for keyword in very_high_risk_keywords):
+            keyword_risk = 0.4
+            keyword_matches = [kw for kw in very_high_risk_keywords if kw in notes_text]
+        elif any(keyword in notes_text for keyword in high_risk_keywords):
+            keyword_risk = 0.25
+            keyword_matches = [kw for kw in high_risk_keywords if kw in notes_text]
         elif any(keyword in notes_text for keyword in medium_risk_keywords):
             keyword_risk = 0.15
+            keyword_matches = [kw for kw in medium_risk_keywords if kw in notes_text]
+        elif any(keyword in notes_text for keyword in low_risk_keywords):
+            keyword_risk = -0.1  # Reduce risk for simple features
+            keyword_matches = [kw for kw in low_risk_keywords if kw in notes_text]
         
-        final_risk = min(1.0, complexity_risk + keyword_risk)
+        # Additional risk factors
+        name_length_risk = min(0.1, len(spec.name.split()) * 0.02)  # Longer names often indicate complexity
         
-        # Determine feasibility and confidence
-        if final_risk <= 0.3:
+        # Calculate final risk with bounds
+        raw_risk = complexity_risk + keyword_risk + name_length_risk
+        final_risk = max(0.05, min(0.95, raw_risk))  # Keep between 0.05-0.95 for realistic variance
+        
+        # Determine feasibility and confidence with more granular thresholds
+        if final_risk <= 0.25:
             feasibility = "High"
             confidence = "Safe"
-        elif final_risk <= 0.6:
+        elif final_risk <= 0.45:
+            feasibility = "High"
+            confidence = "MediumRisk"
+        elif final_risk <= 0.65:
             feasibility = "Medium"
+            confidence = "MediumRisk"
+        elif final_risk <= 0.8:
+            feasibility = "Low"
             confidence = "MediumRisk"
         else:
             feasibility = "Low"
             confidence = "HighRisk"
         
-        result = {
+        # Enhanced reasoning with more detail
+        reasoning_parts = [f"complexity={complexity_risk:.2f}", f"keywords={keyword_risk:.2f}"]
+        if keyword_matches:
+            reasoning_parts.append(f"matched: {', '.join(keyword_matches[:3])}")
+        if name_length_risk > 0:
+            reasoning_parts.append(f"name_complexity={name_length_risk:.2f}")
+        
+        return {
             "feasibility": feasibility,
             "risk_factor": final_risk,
             "delivery_confidence": confidence,
-            "reasoning": f"Deterministic analysis: complexity={complexity_risk:.2f}, keywords={keyword_risk:.2f}"
+            "reasoning": f"Deterministic analysis: {', '.join(reasoning_parts)}"
         }
-        
-        print(f"✅ Deterministic result: {result}")
-        return result
     
     def assess_feature(self, spec: FeatureSpec) -> FeatureSpec:
-        """Assess risk for a single feature - CRITICAL: Creates new FeatureSpec object."""
-        print(f"🤖 Analyzing feasibility for: {spec.name}")
+        """Assess risk for a single feature."""
+        print(f"Analyzing feasibility for: {spec.name}")
         
         # Log assessment start
         if self.monitor:
@@ -353,13 +618,11 @@ Please respond with valid JSON format:
             engineering=spec.engineering,
             dependency=spec.dependency,
             complexity=spec.complexity,
-            notes=spec.notes + [f"Risk Assessment: {analysis.get('reasoning', 'No reasoning provided')}"],
+            notes=spec.notes + [f"Risk Assessment: {analysis.get('reasoning', 'No reasoning')}"],
             feasibility=analysis["feasibility"],
             risk_factor=analysis["risk_factor"],
             delivery_confidence=analysis["delivery_confidence"]
         )
-        
-        print(f"📊 Assessed {spec.name}: feasibility={new_spec.feasibility}, risk={new_spec.risk_factor:.3f}, confidence={new_spec.delivery_confidence}")
         
         # Log assessment completion
         if self.monitor:
@@ -378,10 +641,10 @@ Please respond with valid JSON format:
     
     def enrich(self, specs: List[FeatureSpec], errors: List[str]) -> List[FeatureSpec]:
         """Enrich all features with AI-enhanced risk assessment."""
-        print(f"🚀 FeasibilityAgent.enrich called with {len(specs)} features")
+        print(f"FeasibilityAgent.enrich called with {len(specs)} features")
         
         if not self.config.risk.enable_feasibility_agent:
-            print("⏭️ FeasibilityAgent disabled in configuration")
+            print("FeasibilityAgent disabled in configuration")
             return specs
         
         enriched_specs = []
@@ -393,97 +656,93 @@ Please respond with valid JSON format:
             except Exception as e:
                 print(f"❌ Error assessing {spec.name}: {str(e)}")
                 errors.append(f"FeasibilityAgent error for {spec.name}: {str(e)}")
-                # Add original spec with default risk values
-                default_spec = FeatureSpec(
-                    name=spec.name,
-                    reach=spec.reach,
-                    revenue=spec.revenue,
-                    risk_reduction=spec.risk_reduction,
-                    engineering=spec.engineering,
-                    dependency=spec.dependency,
-                    complexity=spec.complexity,
-                    notes=spec.notes,
-                    feasibility="Medium",
-                    risk_factor=0.5,
-                    delivery_confidence="MediumRisk"
-                )
-                enriched_specs.append(default_spec)
+                # Fall back to deterministic analysis instead of hardcoded values
+                try:
+                    fallback_analysis = self._analyze_deterministic(spec)
+                    fallback_spec = FeatureSpec(
+                        name=spec.name,
+                        reach=spec.reach,
+                        revenue=spec.revenue,
+                        risk_reduction=spec.risk_reduction,
+                        engineering=spec.engineering,
+                        dependency=spec.dependency,
+                        complexity=spec.complexity,
+                        notes=spec.notes + [f"Fallback analysis due to error: {str(e)}"],
+                        feasibility=fallback_analysis["feasibility"],
+                        risk_factor=fallback_analysis["risk_factor"],
+                        delivery_confidence=fallback_analysis["delivery_confidence"]
+                    )
+                    enriched_specs.append(fallback_spec)
+                except Exception as fallback_error:
+                    print(f"❌❌ Fallback analysis also failed for {spec.name}: {str(fallback_error)}")
+                    # Only use hardcoded values as last resort
+                    emergency_risk = max(0.3, min(0.7, (spec.engineering + spec.dependency + spec.complexity) / 3))
+                    emergency_spec = FeatureSpec(
+                        name=spec.name,
+                        reach=spec.reach,
+                        revenue=spec.revenue,
+                        risk_reduction=spec.risk_reduction,
+                        engineering=spec.engineering,
+                        dependency=spec.dependency,
+                        complexity=spec.complexity,
+                        notes=spec.notes + ["Emergency fallback: both LLM and deterministic analysis failed"],
+                        feasibility="Medium" if emergency_risk <= 0.5 else "Low",
+                        risk_factor=emergency_risk,
+                        delivery_confidence="MediumRisk" if emergency_risk <= 0.5 else "HighRisk"
+                    )
+                    enriched_specs.append(emergency_spec)
         
-        print(f"✅ FeasibilityAgent.enrich completed - processed {len(enriched_specs)} features")
+        print(f"FeasibilityAgent.enrich completed - processed {len(enriched_specs)} features")
         return enriched_specs
 ```
 
-**Why this change**: Creates the core FeasibilityAgent with both AI and deterministic risk assessment capabilities.
-
 ---
 
-### **Step 8: Fix Graph Workflow and Add Feasibility Node**
+### **File 5: `graph.py` - Update Workflow**
 
-**What we're doing**: Fixing the workflow to prevent conflicts and adding the feasibility assessment step.
-
-**File to edit**: `graph.py`
-
-**Action 1**: Update import at the top:
+**Update import at top:**
 ```python
 from nodes import extractor_node, feasibility_node, scorer_node, prioritizer_node
 ```
 
-**Action 2**: In the `_build_graph` method, find this section (around line 55):
+**In `_build_graph` method, replace the workflow section with:**
 ```python
-        # Define the flow: START -> extract -> score -> prioritize -> END
-        workflow.set_entry_point("extract")
-        workflow.add_edge("extract", "feasibility")     # NEW
-        workflow.add_edge("feasibility", "score")       # NEW
-        workflow.add_edge("extract", "score")
-        workflow.add_edge("score", "prioritize")
-        workflow.add_edge("prioritize", END)
+# Add feasibility wrapper
+def feasibility_with_config(state: State) -> State:
+    return feasibility_node(state, self.config)
+
+# Add all nodes
+workflow.add_node("extract", extractor_with_config)
+workflow.add_node("feasibility", feasibility_with_config)
+workflow.add_node("score", scorer_with_config)
+workflow.add_node("prioritize", prioritizer_with_config)
+
+# Define the flow: START -> extract -> feasibility -> score -> prioritize -> END
+workflow.set_entry_point("extract")
+workflow.add_edge("extract", "feasibility")      # Extract goes to Feasibility
+workflow.add_edge("feasibility", "score")        # Feasibility goes to Score
+workflow.add_edge("score", "prioritize")         # Score goes to Prioritize
+workflow.add_edge("prioritize", END)             # Prioritize goes to End
+
+return workflow.compile()  # CRITICAL: Must return compiled workflow
 ```
-
-**Replace it with**:
-```python
-        # Add feasibility wrapper
-        def feasibility_with_config(state: State) -> State:
-            return feasibility_node(state, self.config)
-        
-        # Add all nodes
-        workflow.add_node("extract", extractor_with_config)
-        workflow.add_node("feasibility", feasibility_with_config)
-        workflow.add_node("score", scorer_with_config)
-        workflow.add_node("prioritize", prioritizer_with_config)
-        
-        # Define the flow: START -> extract -> feasibility -> score -> prioritize -> END
-        workflow.set_entry_point("extract")
-        workflow.add_edge("extract", "feasibility")      # Extract goes to Feasibility
-        workflow.add_edge("feasibility", "score")        # Feasibility goes to Score
-        workflow.add_edge("score", "prioritize")         # Score goes to Prioritize
-        workflow.add_edge("prioritize", END)             # Prioritize goes to End
-
-        return workflow.compile()  # CRITICAL: Must return compiled workflow
-```
-
-**Why this change**: Removed the conflicting direct path from "extract" to "score" and added proper feasibility node integration.
 
 ---
 
-### **Step 9: Add Feasibility Node and Fix Scoring Issues**
+### **File 6: `nodes.py` - Add Feasibility Node and Risk Processing**
 
-**What we're doing**: Adding the feasibility processing node and fixing variable errors in the scoring system.
-
-**File to edit**: `nodes.py`
-
-**Action 1**: Add import after line 17:
+**Add import after line 17:**
 ```python
 from agents_feasibility import FeasibilityAgent
 ```
 
-**Action 2**: Add feasibility node function after `extractor_node`:
+**Add this complete function after `extractor_node`:**
 ```python
 def feasibility_node(state: State, config: Optional[Config] = None) -> State:
     """
-    Agent 2: Feasibility Agent
-    Assesses implementation risk and delivery confidence for features.
+    Agent 2: Feasibility Agent - Assesses implementation risk and delivery confidence
     """
-    print("🚀 Feasibility Node: Starting risk assessment")
+    print("Feasibility Node: Starting risk assessment")
     
     # Apply monitoring if enabled
     if config and config.monitoring.enabled:
@@ -494,7 +753,7 @@ def feasibility_node(state: State, config: Optional[Config] = None) -> State:
         return _feasibility_node_impl(state, config)
 
 def _feasibility_node_impl(state: State, config: Optional[Config] = None) -> State:
-    """Implementation of feasibility node with comprehensive debugging."""
+    """Implementation of feasibility node."""
     cfg = config or Config.default()
     
     if "errors" not in state:
@@ -505,7 +764,7 @@ def _feasibility_node_impl(state: State, config: Optional[Config] = None) -> Sta
         state["errors"].append("feasibility_node:no_extracted_features")
         return state
     
-    print(f"📋 Feasibility Node: Processing {len(extracted_output.features)} features")
+    print(f" Feasibility Node: Processing {len(extracted_output.features)} features")
     
     feasibility_agent = FeasibilityAgent(cfg)
     enriched_features = feasibility_agent.enrich(extracted_output.features, state["errors"])
@@ -513,375 +772,108 @@ def _feasibility_node_impl(state: State, config: Optional[Config] = None) -> Sta
     extracted_output.features = enriched_features
     state["extracted"] = extracted_output
     
-    print("✅ Feasibility Node: Completed risk assessment")
+    print("Feasibility Node: Completed risk assessment")
     return state
 ```
 
-**Action 3**: Update extractor node FeatureSpec creation. Find the FeatureSpec constructor and update:
+**In `_extractor_node_impl`, update FeatureSpec creation to include risk fields:**
 ```python
-        feature_spec = FeatureSpec(
-            name=raw_feature.name,
-            reach=_norm_hint(raw_feature.reach_hint, defaults['reach']),
-            revenue=_norm_hint(raw_feature.revenue_hint, defaults['revenue']),
-            risk_reduction=_norm_hint(raw_feature.risk_reduction_hint, defaults['risk_reduction']),
-            engineering=_norm_hint(raw_feature.engineering_hint, defaults['engineering']),
-            dependency=_norm_hint(raw_feature.dependency_hint, defaults['dependency']),
-            complexity=_norm_hint(raw_feature.complexity_hint, defaults['complexity']),
-            notes=final_notes,
-            # Risk assessment fields (will be populated by FeasibilityAgent)
-            feasibility=None,
-            risk_factor=0.4,  # Default risk factor
-            delivery_confidence=None
-        )
+# Find the FeatureSpec creation and ADD these fields:
+notes=final_notes,
+# Risk assessment fields (will be populated by FeasibilityAgent)
+feasibility=None,
+risk_factor=0.4,  # Default risk factor
+delivery_confidence=None
 ```
 
-**Action 4**: Fix scoring loop variable error. Find this code (around line 377):
+**In `_scorer_node_impl`, replace the ScoredFeature creation with:**
 ```python
-        scored_features = []
-        
-        for feature in extracted_output.features:
-            # Calculate impact score
-```
+# Apply risk penalty if available
+final_score = score
+risk_note = ""
 
-**Replace it with**:
-```python
-        scored_features = []
-        
-        for i, feature in enumerate(extracted_output.features):
-            # Calculate impact score
-```
+if hasattr(feature, 'risk_factor') and feature.risk_factor is not None:
+    risk_multiplier = 1 - (config.risk.risk_penalty * feature.risk_factor)
+    final_score = score * risk_multiplier
+    risk_note = f" | Risk-adjusted ({getattr(feature, 'delivery_confidence', 'Unknown')})"
 
-**Action 5**: Fix duplicate scoring append and add risk penalty. Find this code block (around line 441):
-```python
-            scored_features.append(ScoredFeature(
-                name=feature.name,
-                impact=impact,
-                effort=effort, 
-                score=final_score,
-                rationale=rationale + risk_note,
-                # CRITICAL: Include risk assessment fields in final output - SAFE ACCESS
-                feasibility=getattr(feature, 'feasibility', None),
-                risk_factor=getattr(feature, 'risk_factor', None),
-                delivery_confidence=getattr(feature, 'delivery_confidence', None)
-            ))
-            
-            scored_features.append(scored_feature)
-```
-
-**Replace it with**:
-```python
-        # Apply risk penalty if available - ENHANCED with debugging
-        final_score = score
-        risk_note = ""
-        
-        print(f"   Scoring {i+1}: {feature.name} - feasibility={getattr(feature, 'feasibility', None)}, risk={getattr(feature, 'risk_factor', None)}")
-        
-        if hasattr(feature, 'risk_factor') and feature.risk_factor is not None:
-            risk_multiplier = 1 - (config.risk.risk_penalty * feature.risk_factor)
-            final_score = score * risk_multiplier
-            risk_note = f" | Risk-adjusted ({getattr(feature, 'delivery_confidence', 'Unknown')})"
-        
-        scored_features.append(ScoredFeature(
-            name=feature.name,
-            impact=impact,
-            effort=effort, 
-            score=final_score,
-            rationale=rationale + risk_note,
-            # CRITICAL: Include risk assessment fields in final output - SAFE ACCESS
-            feasibility=getattr(feature, 'feasibility', None),
-            risk_factor=getattr(feature, 'risk_factor', None),
-            delivery_confidence=getattr(feature, 'delivery_confidence', None)
-        ))
-```
-
-**Why this change**: Added proper variable definition, removed duplicate append, and integrated risk penalty calculation with safe field access.
-
----
-
-### **Step 10: Add Missing Monitoring Method**
-
-**What we're doing**: Adding a missing method to the monitoring system that the FeasibilityAgent needs to log its activities.
-
-**File to edit**: `monitoring.py`
-
-**Find the `_hash_data` method in the `AuditTrail` class and add this new method right after it (around line 235)**:
-```python
-    def log_event(self, agent_name: str, event_type: str, details: Dict[str, Any]):
-        """Log a simple event for agent activities."""
-        try:
-            # Create a simple audit entry for the event
-            entry = AuditLogEntry(
-                timestamp=datetime.now(),
-                agent_name=agent_name,
-                action=event_type,
-                input_hash=self._hash_data(details),
-                output_hash=self._hash_data(details),
-                config_snapshot={},
-                execution_time=0.0,
-                success=True,
-                decision_factors=details,
-                confidence_score=1.0,
-                error_details=None
-            )
-            
-            self.audit_entries.append(entry)
-            self._log_audit_entry(entry)
-            
-            print(f"📝 Audit: {agent_name} - {event_type}")
-            
-        except Exception as e:
-            print(f"⚠️ Audit logging failed: {str(e)}")
-```
-
-**Why this change**: The FeasibilityAgent calls this method to log its activities, but it was missing from the monitoring system.
-
----
-
-## **🧪 Testing Your Implementation**
-
-### **Step 11: Test the Complete System**
-
-**Run this command to test everything**:
-```bash
-cd feature_prioritizer
-python run.py --file samples/features.json --metric RICE --auto-save --verbose
-```
-
-**What you should see**:
-```bash
-🚀 Feasibility Node: Starting risk assessment
-🚀 FeasibilityAgent.enrich called with 15 features
-🤖 Analyzing feasibility for: One-Click Checkout
-✅ LLM analysis complete for One-Click Checkout: High
-📊 Assessed One-Click Checkout: feasibility=High, risk=0.300, confidence=Safe
-✅ Feasibility Node: Completed risk assessment
-   Scoring 1: One-Click Checkout - feasibility=High, risk=0.300
-   Scoring 2: Real-time Notifications - feasibility=Low, risk=0.720
-Results saved to:
-   results/prioritization_rice_YYYYMMDD_HHMMSS.json
-   results/prioritization_rice_YYYYMMDD_HHMMSS.csv
-```
-
-**Check the output files**:
-```bash
-# Look at the JSON results
-cat results/prioritization_rice_*.json | head -20
-
-# Look at the CSV results  
-head -5 results/prioritization_rice_*.csv
-```
-
-**Expected content**: You should see features with scores, rationale, and risk assessment fields populated.
-
----
-
-### **Step 12: Verify Risk Assessment Working**
-
-**Test without AI (fallback mode)**:
-```bash
-# Temporarily remove API key to test fallback
-mv .env .env.backup
-python run.py --file samples/features.json --metric RICE --auto-save --verbose
-```
-
-**What you should see**:
-```bash
-🔄 LLM disabled, using deterministic analysis for [Feature Name]
-🔧 Using deterministic analysis for [Feature Name]
-✅ Deterministic result: {'feasibility': 'High', 'risk_factor': 0.5, ...}
-```
-
-**Restore your configuration**:
-```bash
-mv .env.backup .env
-```
-
----
-
-## **📋 Summary of Changes Made**
-
-### **What the FeasibilityAgent Adds**:
-
-1. **Risk Evaluation**: Each feature gets assessed for delivery risk
-2. **Feasibility Rating**: Features rated as High/Medium/Low feasibility
-3. **Risk Penalties**: High-risk features get lower priority scores
-4. **Smart Fallback**: System works with or without AI connectivity
-
-### **Files Modified**:
-
-| File | Purpose | Key Changes |
-|------|---------|-------------|
-| `.env` | Configuration | Added API keys and system settings |
-| `config.py` | Configuration | Added RiskPolicy class, enabled LLM by default |
-| `models.py` | Data Models | Added risk assessment fields to FeatureSpec and ScoredFeature |
-| `llm_utils.py` | LLM Interface | Created universal LLM function with multi-provider support |
-| `agents_feasibility.py` | Risk Agent | **NEW FILE** - Main FeasibilityAgent implementation |
-| `graph.py` | Workflow | Fixed conflicting edges, added feasibility node |
-| `nodes.py` | Processing | Added feasibility node, fixed scoring variables, integrated risk penalty, **fixed prioritizer to preserve risk fields** |
-| `monitoring.py` | Logging | Added missing log_event method |
-
-### **Before vs After**:
-
-**Before**: Extract → Score → Prioritize (3 steps)
-**After**: Extract → **Risk Assessment** → Score → Prioritize (4 steps)
-
-**Output Enhancement**:
-- **Before**: Basic scores without risk consideration
-- **After**: Risk-adjusted scores with feasibility insights
-
----
-
-## **🚨 Common Issues & Solutions**
-
-### **Issue 1**: "Can receive only one value per step"
-**Solution**: Fixed in Step 8 (graph.py workflow edges)
-
-### **Issue 2**: "name 'i' is not defined"
-**Solution**: Fixed in Step 9 Action 4 (nodes.py variable definition)
-
-### **Issue 3**: "name 'scored_feature' is not defined"
-**Solution**: Fixed in Step 9 Action 5 (nodes.py duplicate removal)
-
-### **Issue 4**: "'AuditTrail' object has no attribute 'log_event'"
-**Solution**: Fixed in Step 10 (monitoring.py method addition)
-
-### **Issue 5**: Empty output files
-**Solution**: All above fixes resolve the pipeline errors that caused this
-
-### **Issue 6**: "No OpenAI API key found"
-**Solution**: Ensure Step 3 (.env file) is completed with your real API key
-
-### **Issue 7**: Feasibility fields are empty in output
-**Problem**: Risk assessment working correctly but final JSON/CSV output shows `null` values for `feasibility`, `risk_factor`, and `delivery_confidence` fields.
-
-**Root Cause**: The prioritizer node was creating new `ScoredFeature` objects but wasn't carrying over the risk assessment fields from the enriched features.
-
-**Solution**: Update the prioritizer node to preserve risk assessment fields.
-
-**File to edit**: `nodes.py`
-
-**Find this code** (around line 507):
-```python
-# Create new feature with enhanced rationale
-enhanced_feature = ScoredFeature(
+scored_features.append(ScoredFeature(
     name=feature.name,
-    impact=feature.impact,
-    effort=feature.effort,
-    score=feature.score,
-    rationale=enhanced_rationale
-)
+    impact=impact,
+    effort=effort, 
+    score=final_score,
+    rationale=rationale + risk_note,
+    # Include risk assessment fields in final output
+    feasibility=getattr(feature, 'feasibility', None),
+    risk_factor=getattr(feature, 'risk_factor', None),
+    delivery_confidence=getattr(feature, 'delivery_confidence', None)
+))
 ```
 
-**Replace it with**:
+**In `_prioritizer_node_impl`, update enhanced_feature creation:**
 ```python
-# Create new feature with enhanced rationale
 enhanced_feature = ScoredFeature(
     name=feature.name,
     impact=feature.impact,
     effort=feature.effort,
     score=feature.score,
     rationale=enhanced_rationale,
+    # Preserve risk fields
     feasibility=feature.feasibility,
     risk_factor=feature.risk_factor,
     delivery_confidence=feature.delivery_confidence
 )
 ```
 
-**Why this fix**: This ensures that the risk assessment fields calculated by the FeasibilityAgent are preserved through the final processing step and appear in the output files.
-
-### **Issue 8**: "No OpenAI API key found"
-
 ---
 
-## **⚙️ Configuration Options**
+### **File 7: `monitoring.py` - Add Event Logging**
 
-### **Risk Assessment Settings**:
+**Add this method to AuditTrail class (around line 245):**
 ```python
-# Light penalty (30%) - good for agile teams
-config.risk.risk_penalty = 0.3  
-
-# Heavy penalty (70%) - good for enterprise/critical systems
-config.risk.risk_penalty = 0.7  
-
-# Agent Control
-config.risk.enable_feasibility_agent = False  # Disable agent entirely
-
-# LLM vs Deterministic Analysis
-config.risk.use_llm_analysis = True   # Use LLM for enhanced analysis
-config.risk.use_llm_analysis = False  # Use only deterministic keywords
+def log_event(self, agent_name: str, event_type: str, details: Dict[str, Any]):
+    """Log a simple event for agent activities."""
+    try:
+        # Create a simple audit entry for the event
+        entry = AuditLogEntry(
+            timestamp=datetime.now(),
+            agent_name=agent_name,
+            action=event_type,
+            input_hash=self._hash_data(details),
+            output_hash=self._hash_data(details),
+            config_snapshot={},
+            execution_time=0.0,
+            success=True,
+            decision_factors=details,
+            confidence_score=1.0,
+            error_details=None
+        )
+        
+        self.audit_entries.append(entry)
+        self._log_audit_entry(entry)
+        
+        print(f"Audit: {agent_name} - {event_type}")
+        
+    except Exception as e:
+        print(f"Audit logging failed: {str(e)}")
 ```
-
-### **LLM Provider Configuration**:
-```properties
-# OpenAI Configuration
-LLM_PROVIDER=openai
-OPENAI_API_AGENT_KEY=sk-proj-your_key_here
-
-# Gemini Configuration (via LLMP gateway)
-LLM_PROVIDER=gemini
-LLMP_KEY=your_jwt_token_here
-
-# Auto-detection (recommended)
-# Leave LLM_PROVIDER blank - system will auto-detect based on available keys
-```
-
-### **Performance Comparison**:
-
-| Mode | Speed | Accuracy | Cost | Use Case |
-|------|-------|----------|------|----------|
-| **LLM (OpenAI)** | Medium | High | $$ | Complex features, detailed analysis |
-| **LLM (Gemini)** | Fast | High | $ | Cost-effective LLM analysis |
-| **Deterministic** | Fastest | Good | Free | Simple features, batch processing |
 
 ---
 
-## **🔍 Quick Verification Commands**
+## ** Testing the Implementation**
 
+### **Basic Test**
 ```bash
-# Test imports work correctly
 cd feature_prioritizer
-python -c "from config import Config; from models import FeatureSpec; from nodes import feasibility_node; print('✅ All imports successful')"
-
-# Test FeasibilityAgent functionality
-python -c "
-from agents_feasibility import FeasibilityAgent
-from config import Config
-from models import FeatureSpec
-
-config = Config.default()
-agent = FeasibilityAgent(config)
-feature = FeatureSpec(
-    name='Test Feature',
-    reach=3, revenue=2, risk_reduction=1,
-    engineering=2, dependency=1, complexity=2,
-    notes=['Simple UI update']
-)
-result = agent.assess_feature(feature)
-print(f'✅ SUCCESS: Risk assessment fields populated!')
-print(f'   feasibility={result.feasibility}')
-print(f'   risk_factor={result.risk_factor}')
-print(f'   delivery_confidence={result.delivery_confidence}')
-"
-
-# Test complete pipeline
 python run.py --file samples/features.json --metric RICE --auto-save --verbose
 ```
 
----
-
-## **🎯 Final Verification: Risk Fields Working**
-
-**After completing all steps, verify the risk assessment fields are properly populated in the output:**
-
+### **With LLM Enhancement**
 ```bash
-# Test with a simple feature to confirm risk fields appear
-python run.py --json '[{"name": "Payment Integration", "description": "Integrate with third-party payment provider", "engineering_hint": 4, "complexity_hint": 4}]' --metric RICE --auto-save
-
-# Check the latest result file
-cat results/prioritization_rice_*.json | tail -15
+python run.py --file samples/features.json --metric RICE --llm --auto-save
 ```
 
-**Expected Output** (risk fields should be populated, not null):
+### **Expected Output Format**
 ```json
 {
   "prioritized_features": [
@@ -890,7 +882,7 @@ cat results/prioritization_rice_*.json | tail -15
       "impact": 0.7,
       "effort": 0.735,
       "score": 0.357,
-      "rationale": "Revenue impact; Engineering heavy; High complexity; Scored using RICE | Risk-adjusted (HighRisk)",
+      "rationale": "Revenue impact; Engineering heavy | Risk-adjusted (HighRisk)",
       "feasibility": "Low",
       "risk_factor": 1.0,
       "delivery_confidence": "HighRisk"
@@ -899,14 +891,29 @@ cat results/prioritization_rice_*.json | tail -15
 }
 ```
 
-**✅ Success Indicators:**
-- `feasibility` shows "Low", "Medium", or "High" (not null)
-- `risk_factor` shows a number between 0.0-1.0 (not null)  
-- `delivery_confidence` shows "Safe", "MediumRisk", or "HighRisk" (not null)
-- `rationale` includes "Risk-adjusted" text
-
-**If risk fields show null**: Double-check that you applied the prioritizer node fix in Issue 7 above.
+### **Verification Checklist**
+- System runs without errors
+- Risk fields are populated (not null)
+- Rationale includes "Risk-adjusted" text
+- Scores are modified based on risk factors
+- Works with and without LLM connectivity
 
 ---
 
-*This consolidated guide provides everything needed to implement the FeasibilityAgent enhancement in a single document with all fixes integrated into the main steps, designed specifically for TPMs to follow step-by-step without requiring deep coding expertise.*
+## ** Key Benefits Achieved**
+
+1. ** Enhanced Risk Assessment**: Features now include feasibility analysis
+2. ** Risk-Adjusted Scoring**: High-risk features get score penalties automatically
+3. ** AI-Powered Analysis**: Uses LLM for intelligent risk evaluation with fallback
+4. ** Better Prioritization**: More accurate feature ranking with risk considerations
+5. ** Production Ready**: Full monitoring, error handling, and configuration support
+
+---
+
+## ** Next Steps (Optional Enhancements)**
+
+1. **Advanced Risk Rules**: Customize risk penalties per project type
+2. **Industry Patterns**: Add domain-specific risk keywords and patterns  
+3. **Historical Learning**: Track actual delivery outcomes to improve risk predictions
+4. **Integration**: Connect with JIRA/Azure DevOps for automated risk assessment
+
